@@ -748,12 +748,27 @@
           fetchData();
         };
 
-        // Alterna o status e salva imediatamente no banco de dados
+        // Alterna o status e persiste no Supabase sem reescrever o estado reativo bruscamente
         const togglePaidStatus = async (t) => {
-          const newStatus = !t.is_paid;
-          t.is_paid = newStatus; // Atualização otimista na UI
-          await supabaseClient.from('transactions').update({ is_paid: newStatus }).eq('id', t.id);
-          fetchData();
+          const targetItem = transactions.value.find(item => item.id === t.id);
+          if (!targetItem) return;
+
+          const newPaidStatus = !targetItem.is_paid;
+          targetItem.is_paid = newPaidStatus; // Atualiza a UI imediatamente
+
+          const { error } = await supabaseClient
+            .from('transactions')
+            .update({ is_paid: newPaidStatus })
+            .eq('id', targetItem.id);
+
+          if (error) {
+            console.error('Erro ao atualizar status no Supabase:', error);
+            targetItem.is_paid = !newPaidStatus; // Reverte se houver falha
+            alert('Não foi possível salvar a alteração de status no banco de dados.');
+          } else {
+            calculateProjection();
+            renderCharts();
+          }
           nextTick(() => lucide.createIcons());
         };
 
