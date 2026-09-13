@@ -597,7 +597,7 @@
         const hideValues = ref(false);
         const openModal = ref(false);
         const isEditing = ref(false);
-        const dbStatus = ref('connecting'); // 'connecting' | 'connected' | 'error'
+        const dbStatus = ref('connecting');
 
         const transactions = ref([]);
         const categories = ref([]);
@@ -674,7 +674,6 @@
           nextTick(() => lucide.createIcons());
         };
 
-        // Salvar automaticamente ao fechar a modal
         const closeModal = async () => {
           if (txForm.value.description && txForm.value.amount) {
             await saveTransaction();
@@ -695,9 +694,17 @@
           };
 
           if (isEditing.value && txForm.value.id) {
-            await supabaseClient.from('transactions').update(payload).eq('id', txForm.value.id);
+            const { error } = await supabaseClient.from('transactions').update(payload).eq('id', txForm.value.id);
+            if (error) {
+              alert(`Erro ao atualizar transação: ${error.message}`);
+              return;
+            }
           } else if (txForm.value.description && txForm.value.amount) {
-            await supabaseClient.from('transactions').insert([payload]);
+            const { error } = await supabaseClient.from('transactions').insert([payload]);
+            if (error) {
+              alert(`Erro ao salvar transação: ${error.message}`);
+              return;
+            }
           }
 
           openModal.value = false;
@@ -705,7 +712,7 @@
         };
 
         const saveRecurring = async () => {
-          await supabaseClient.from('transactions').insert([{
+          const { error } = await supabaseClient.from('transactions').insert([{
             description: recForm.value.description,
             amount: recForm.value.amount,
             type: recForm.value.type,
@@ -716,6 +723,12 @@
             date: new Date().toISOString().substr(0, 10),
             is_paid: false
           }]);
+
+          if (error) {
+            alert(`Erro ao salvar conta fixa: ${error.message}`);
+            return;
+          }
+
           alert('Conta fixa cadastrada com sucesso!');
           recForm.value = { description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', recurrence_day: 5 };
           fetchData();
@@ -742,29 +755,33 @@
             });
             startDate.setMonth(startDate.getMonth() + 1);
           }
-          await supabaseClient.from('transactions').insert(records);
+          const { error } = await supabaseClient.from('transactions').insert(records);
+          if (error) {
+            alert(`Erro ao gerar parcelas: ${error.message}`);
+            return;
+          }
           alert('Parcelamento gerado!');
           instForm.value = { description: '', totalAmount: null, count: 12, categoryId: '', payment_source: 'Cartão Pessoal' };
           fetchData();
         };
 
-        // Alterna o status e persiste no Supabase sem reescrever o estado reativo bruscamente
+        // Função togglePaidStatus atualizada com callback de resposta
         const togglePaidStatus = async (t) => {
-          const targetItem = transactions.value.find(item => item.id === t.id);
-          if (!targetItem) return;
+          const newStatus = !t.is_paid;
+          
+          // 1. Atualização Otimista na Interface local Vue
+          t.is_paid = newStatus;
 
-          const newPaidStatus = !targetItem.is_paid;
-          targetItem.is_paid = newPaidStatus; // Atualiza a UI imediatamente
-
+          // 2. Persistência no banco Supabase
           const { error } = await supabaseClient
             .from('transactions')
-            .update({ is_paid: newPaidStatus })
-            .eq('id', targetItem.id);
+            .update({ is_paid: newStatus })
+            .eq('id', t.id);
 
           if (error) {
-            console.error('Erro ao atualizar status no Supabase:', error);
-            targetItem.is_paid = !newPaidStatus; // Reverte se houver falha
-            alert('Não foi possível salvar a alteração de status no banco de dados.');
+            console.error('Erro de gravação Supabase RLS/Update:', error);
+            t.is_paid = !newStatus; // Reverte localmente em caso de falha
+            alert(`Erro ao salvar alteração: ${error.message || 'Verifique as permissões de RLS no Supabase'}`);
           } else {
             calculateProjection();
             renderCharts();
@@ -774,7 +791,11 @@
 
         const deleteTransaction = async (id) => {
           if (confirm('Deseja realmente remover esta transação?')) {
-            await supabaseClient.from('transactions').delete().eq('id', id);
+            const { error } = await supabaseClient.from('transactions').delete().eq('id', id);
+            if (error) {
+              alert(`Erro ao remover transação: ${error.message}`);
+              return;
+            }
             fetchData();
           }
         };
@@ -823,7 +844,6 @@
           return `Você já comprometeu o total das receitas cadastradas neste mês.`;
         });
 
-        // Todas as despesas do mês vigente para a checklist
         const currentMonthAllTransactions = computed(() => {
           const currentMonthStr = new Date().toISOString().substr(0, 7);
           return transactions.value.filter(t => t.type === 'expense' && t.date.startsWith(currentMonthStr));
@@ -890,7 +910,6 @@
           return `${d}/${m}/${y}`;
         };
 
-        // Renderização dos Gráficos do Dashboard
         const renderCharts = async () => {
           await nextTick();
           if (currentTab.value !== 'dashboard') return;
