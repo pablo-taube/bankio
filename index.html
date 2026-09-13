@@ -538,9 +538,14 @@
                     Total restante: {{ hideValues ? '••••••' : formatCurrency(item.remainingBalance) }}
                   </span>
                 </div>
-                <button @click="deleteInstallmentGroup(item.groupId)" class="text-gray-400 hover:text-rose-500 transition" title="Excluir todo o parcelamento">
-                  <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
+                <div class="flex items-center gap-1">
+                  <button @click="openEditInstallmentModal(item)" class="text-gray-400 hover:text-blue-600 transition p-1" title="Editar compra parcelada">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                  </button>
+                  <button @click="deleteInstallmentGroup(item.groupId)" class="text-gray-400 hover:text-rose-500 transition p-1" title="Excluir todo o parcelamento">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
               </div>
             </div>
             <div v-if="installmentGroups.length === 0" class="text-center py-6 text-gray-400 text-xs">
@@ -794,6 +799,48 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal Editar Compra Parcelada -->
+    <div v-if="openEditInstallmentModalState" class="fixed inset-0 bg-black/25 backdrop-blur-md flex items-center justify-center p-4 z-50">
+      <div class="glass-card p-6 max-w-md w-full shadow-2xl">
+        <h3 class="text-base font-bold text-gray-800 mb-4">Editar Compra Parcelada</h3>
+        <form @submit.prevent="updateInstallmentGroup" class="space-y-3">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Descrição da Compra</label>
+            <input v-model="editInstForm.description" placeholder="Ex: Smartphone" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Valor da Parcela (R$)</label>
+              <input v-model.number="editInstForm.installmentValue" type="number" step="0.01" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Origem / Cartão</label>
+              <select v-model="editInstForm.payment_source" class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+                <option v-for="s in paymentSources" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Categoria</label>
+            <select v-model="editInstForm.categoryId" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+              <option value="" disabled>Selecione a Categoria</option>
+              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <p class="text-[10px] text-gray-400">
+            A alteração atualizará a descrição, o valor da parcela, o cartão e a categoria de todas as parcelas deste grupo.
+          </p>
+          <div class="flex gap-2 pt-3">
+            <button type="button" @click="openEditInstallmentModalState = false" class="flex-1 py-2.5 bg-gray-200/70 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
+            <button type="submit" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition">
+              Atualizar Grupo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -809,6 +856,7 @@
         const hideValues = ref(false);
         const openModal = ref(false);
         const isEditing = ref(false);
+        const openEditInstallmentModalState = ref(false);
         const dbStatus = ref('connecting');
 
         const transactions = ref([]);
@@ -824,6 +872,7 @@
         const txForm = ref({ id: null, description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', date: new Date().toISOString().substr(0, 10), is_paid: false });
         const recForm = ref({ description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', recurrence_day: 5 });
         const instForm = ref({ description: '', totalAmount: null, count: 12, categoryId: '', payment_source: 'Cartão Pessoal' });
+        const editInstForm = ref({ groupId: '', description: '', installmentValue: 0, payment_source: 'Cartão Pessoal', categoryId: '' });
         const projectionData = ref({ income: 0, expenses: 0, txs: [] });
 
         const debtStrategy = ref('snowball');
@@ -834,12 +883,25 @@
         let deleveragingChartInstance = null;
         let categoryComparisonChartInstance = null;
 
+        const ensureComprasCategory = async () => {
+          const comprasCat = categories.value.find(c => c.name.toLowerCase() === 'compras');
+          if (!comprasCat) {
+            const { data, error } = await supabaseClient.from('categories').insert([
+              { name: 'Compras', icon: 'shopping-bag', color: '#EC4899' }
+            ]).select();
+            if (!error && data && data.length > 0) {
+              categories.value.push(data[0]);
+            }
+          }
+        };
+
         const fetchData = async () => {
           try {
             dbStatus.value = 'connecting';
             const { data: catData, error: catErr } = await supabaseClient.from('categories').select('*');
             if (catErr) throw catErr;
             categories.value = catData || [];
+            await ensureComprasCategory();
 
             const { data: txData, error: txErr } = await supabaseClient.from('transactions').select('*, categories(*)').order('date', { ascending: false });
             if (txErr) throw txErr;
@@ -888,6 +950,19 @@
             is_paid: t.is_paid ?? false
           };
           openModal.value = true;
+          nextTick(() => lucide.createIcons());
+        };
+
+        const openEditInstallmentModal = (item) => {
+          const cat = categories.value.find(c => c.name === item.categoryName);
+          editInstForm.value = {
+            groupId: item.groupId,
+            description: item.description,
+            installmentValue: item.installmentValue,
+            payment_source: item.paymentSource,
+            categoryId: cat ? cat.id : ''
+          };
+          openEditInstallmentModalState.value = true;
           nextTick(() => lucide.createIcons());
         };
 
@@ -982,14 +1057,40 @@
           fetchData();
         };
 
-        // Função togglePaidStatus atualizada com callback de resposta
+        const updateInstallmentGroup = async () => {
+          const groupTxs = transactions.value.filter(t => t.installment_group_id === editInstForm.value.groupId);
+          if (!groupTxs.length) return;
+
+          let hasError = false;
+          for (const tx of groupTxs) {
+            const newDesc = `${editInstForm.value.description} (${tx.current_installment}/${tx.total_installments})`;
+            const { error } = await supabaseClient.from('transactions').update({
+              description: newDesc,
+              amount: editInstForm.value.installmentValue,
+              payment_source: editInstForm.value.payment_source,
+              category_id: editInstForm.value.categoryId
+            }).eq('id', tx.id);
+
+            if (error) {
+              hasError = true;
+              console.error(`Erro ao atualizar parcela ${tx.id}:`, error);
+            }
+          }
+
+          if (hasError) {
+            alert('Houve um erro ao atualizar algumas parcelas do grupo.');
+          } else {
+            alert('Compra parcelada atualizada com sucesso!');
+          }
+
+          openEditInstallmentModalState.value = false;
+          fetchData();
+        };
+
         const togglePaidStatus = async (t) => {
           const newStatus = !t.is_paid;
-          
-          // 1. Atualização Otimista na Interface local Vue
           t.is_paid = newStatus;
 
-          // 2. Persistência no banco Supabase
           const { error } = await supabaseClient
             .from('transactions')
             .update({ is_paid: newStatus })
@@ -997,7 +1098,7 @@
 
           if (error) {
             console.error('Erro de gravação Supabase RLS/Update:', error);
-            t.is_paid = !newStatus; // Reverte localmente em caso de falha
+            t.is_paid = !newStatus;
             alert(`Erro ao salvar alteração: ${error.message || 'Verifique as permissões de RLS no Supabase'}`);
           } else {
             calculateProjection();
@@ -1104,7 +1205,6 @@
 
         const recurringTransactions = computed(() => transactions.value.filter(t => t.is_fixed));
 
-        // --- Agrupamento dos Parcelados Cadastrados para Exibição na Aba Parcelados ---
         const installmentGroups = computed(() => {
           const groups = {};
           transactions.value
@@ -1158,22 +1258,19 @@
           return ((amount / projectionData.value.expenses) * 100).toFixed(0);
         };
 
-        // --- Dívida ativa total (parcelas restantes em aberto de compras parceladas) ---
         const totalActiveDebt = computed(() => {
           return transactions.value
             .filter(t => t.total_installments > 1 && !t.is_paid)
             .reduce((acc, t) => acc + Number(t.amount), 0);
         });
 
-        // --- Índice de Saúde Financeira (0-100) ---
-        // 40% taxa de poupança, 30% comprometimento de renda, 30% dívida ativa vs renda anual
         const healthScore = computed(() => {
           const savings = parseFloat(metrics.value.savingsRate) || 0;
           const commitment = parseFloat(projectionCompromiseRate.value) || 100;
           const annualIncome = metrics.value.income * 12;
           const debtRatio = annualIncome > 0 ? (totalActiveDebt.value / annualIncome) * 100 : 100;
 
-          const savingsScore = Math.max(0, Math.min(100, savings * 2.5)); // 40% já é "ótimo"
+          const savingsScore = Math.max(0, Math.min(100, savings * 2.5));
           const commitmentScore = Math.max(0, Math.min(100, 100 - (commitment - 60)));
           const debtScore = Math.max(0, Math.min(100, 100 - debtRatio * 2));
 
@@ -1187,7 +1284,6 @@
           return { score: Math.max(0, Math.min(100, score)), label, color, message };
         });
 
-        // --- Comparativo Mês Atual vs Mês Anterior ---
         const monthComparison = computed(() => {
           const now = new Date();
           const currentKey = now.toISOString().substr(0, 7);
@@ -1214,7 +1310,6 @@
           };
         });
 
-        // --- Comparativo de Gastos por Origem / Cartão (mês atual vs anterior) ---
         const paymentSourceComparison = computed(() => {
           const now = new Date();
           const currentKey = now.toISOString().substr(0, 7);
@@ -1237,7 +1332,6 @@
           return result.map(s => ({ ...s, barWidth: Math.max(4, (s.current / maxVal) * 100) })).sort((a, b) => b.current - a.current);
         });
 
-        // --- Simulador de Quitação de Dívidas (Bola de Neve / Avalanche) ---
         const debtPayoffPlan = computed(() => {
           const groups = {};
           transactions.value
@@ -1266,7 +1360,6 @@
             ? debts.sort((a, b) => a.remainingBalance - b.remainingBalance)
             : debts.sort((a, b) => b.installmentValue - a.installmentValue);
 
-          // Simulação simplificada: o aporte extra é aplicado integralmente à dívida prioritária
           let extra = Number(extraPayment.value) || 0;
           return debts.map((d, idx) => {
             const monthlyTowardsThis = idx === 0 ? d.installmentValue + extra : d.installmentValue;
@@ -1301,7 +1394,7 @@
                 labels: chartLabels.length ? chartLabels : ['Sem despesas'],
                 datasets: [{
                   data: chartData.some(v => v > 0) ? chartData : [1],
-                  backgroundColor: ['#2E6F68', '#D9822B', '#4A607A', '#9B51E0', '#E76F51', '#3B82F6', '#6366F1'],
+                  backgroundColor: ['#2E6F68', '#D9822B', '#4A607A', '#9B51E0', '#E76F51', '#3B82F6', '#EC4899', '#6366F1'],
                   borderWidth: 0
                 }]
               },
@@ -1473,9 +1566,9 @@
         });
 
         return {
-          currentTab, switchTab, hideValues, openModal, isEditing, dbStatus, dbStatusText, metrics, customGreetingTitle, financialSummaryText, currentMonthAllTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
+          currentTab, switchTab, hideValues, openModal, isEditing, openEditInstallmentModalState, dbStatus, dbStatusText, metrics, customGreetingTitle, financialSummaryText, currentMonthAllTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
           filteredTransactions, recurringTransactions, installmentGroups, deleteInstallmentGroup, filterSearch, filterType, filterSource, selectedProjectionMonth, projectionData, topProjectedExpenses, topProjectedIncome, projectionBySource, projectionCompromiseRate,
-          txForm, recForm, instForm, openCreateModal, openEditModal, closeModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate,
+          txForm, recForm, instForm, editInstForm, openCreateModal, openEditModal, openEditInstallmentModal, updateInstallmentGroup, closeModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate,
           totalActiveDebt, healthScore, monthComparison, paymentSourceComparison, debtStrategy, extraPayment, debtPayoffPlan
         };
       }
