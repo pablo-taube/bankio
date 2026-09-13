@@ -95,6 +95,9 @@
           <button @click="switchTab('planner')" :class="{'bg-[#2E6F68] text-white shadow-lg shadow-[#2E6F68]/20': currentTab === 'planner', 'text-gray-600 hover:bg-white/50': currentTab !== 'planner'}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition">
             <i data-lucide="calendar-range" class="w-4 h-4"></i> Projeção Futura
           </button>
+          <button @click="switchTab('comparisons')" :class="{'bg-[#2E6F68] text-white shadow-lg shadow-[#2E6F68]/20': currentTab === 'comparisons', 'text-gray-600 hover:bg-white/50': currentTab !== 'comparisons'}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Comparativos
+          </button>
         </nav>
       </div>
 
@@ -190,6 +193,44 @@
             </div>
             <div class="text-2xl font-bold tracking-tight">{{ metrics.savingsRate }}%</div>
             <span class="text-[10px] text-emerald-200/80 font-medium mt-1 inline-block">Economizado das receitas</span>
+          </div>
+        </div>
+
+        <!-- Widget: Saúde Financeira -->
+        <div class="glass-card p-6">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="flex items-center gap-4">
+              <div class="relative w-20 h-20 shrink-0">
+                <svg viewBox="0 0 36 36" class="w-20 h-20 -rotate-90">
+                  <path class="text-gray-200/70" stroke="currentColor" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path :stroke="healthScore.color" stroke-width="3.5" stroke-linecap="round" fill="none" :stroke-dasharray="`${healthScore.score}, 100`" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="text-lg font-bold text-gray-800 leading-none">{{ healthScore.score }}</span>
+                  <span class="text-[8px] text-gray-400 font-semibold uppercase">/ 100</span>
+                </div>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-gray-800 tracking-tight">Saúde Financeira</h3>
+                <span class="text-[11px] font-bold" :style="{ color: healthScore.color }">{{ healthScore.label }}</span>
+                <p class="text-[11px] text-gray-500 mt-1 max-w-xs">{{ healthScore.message }}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 w-full md:w-auto">
+              <div class="text-center px-3">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Poupança</p>
+                <p class="text-sm font-bold text-gray-800">{{ metrics.savingsRate }}%</p>
+              </div>
+              <div class="text-center px-3 border-x border-gray-200/60">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Comprometido</p>
+                <p class="text-sm font-bold text-gray-800">{{ projectionCompromiseRate }}%</p>
+              </div>
+              <div class="text-center px-3">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Dívida Ativa</p>
+                <p class="text-sm font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(totalActiveDebt) }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -521,6 +562,141 @@
             <canvas id="deleveragingChart"></canvas>
           </div>
         </div>
+
+        <!-- Simulador de Quitação de Dívidas (Desendividamento) -->
+        <div class="glass-card p-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-4">
+            <div>
+              <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-4 h-4 text-[#2E6F68]"></i>
+                Simulador de Quitação de Dívidas
+              </h4>
+              <p class="text-[11px] text-gray-500">Priorize suas dívidas parceladas em aberto e simule o efeito de um aporte extra mensal</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <select v-model="debtStrategy" class="px-3.5 py-2 rounded-xl glass-input text-xs font-bold text-gray-700">
+                <option value="snowball">Bola de Neve (menor saldo primeiro)</option>
+                <option value="avalanche">Avalanche (maior parcela primeiro)</option>
+              </select>
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-medium text-gray-500">Aporte extra/mês:</span>
+                <input v-model.number="extraPayment" type="number" step="10" min="0" placeholder="0" class="w-24 px-3 py-2 rounded-xl glass-input text-xs font-bold text-gray-700">
+              </div>
+            </div>
+          </div>
+
+          <div v-if="debtPayoffPlan.length === 0" class="text-center py-8 text-gray-400 text-xs">
+            Nenhuma dívida parcelada em aberto no momento. 🎉
+          </div>
+
+          <div v-else class="space-y-3">
+            <div v-for="(d, idx) in debtPayoffPlan" :key="d.groupId"
+                 class="flex items-center justify-between p-4 rounded-2xl border transition"
+                 :class="idx === 0 ? 'bg-emerald-50/70 border-emerald-200' : 'bg-white/60 border-white/80'">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs"
+                     :class="idx === 0 ? 'bg-[#2E6F68] text-white' : 'bg-gray-200/80 text-gray-600'">
+                  {{ idx + 1 }}º
+                </div>
+                <div>
+                  <span class="text-xs font-bold text-gray-800 block">{{ d.description }}</span>
+                  <span class="text-[10px] text-gray-500 font-medium">
+                    {{ d.remainingInstallments }} parcela(s) restante(s) • {{ formatCurrency(d.installmentValue) }}/mês • {{ d.paymentSource }}
+                  </span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-bold text-rose-600 block">{{ hideValues ? '••••••' : formatCurrency(d.remainingBalance) }}</span>
+                <span class="text-[10px] font-semibold" :class="idx === 0 ? 'text-emerald-700' : 'text-gray-400'">
+                  Quitação em ~{{ d.monthsToPayoff }} {{ d.monthsToPayoff === 1 ? 'mês' : 'meses' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-4 p-4 rounded-2xl bg-gray-50/60 border border-gray-200/60 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase block">Dívida Total em Aberto</span>
+                <span class="text-sm font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(totalActiveDebt) }}</span>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase block">Estimativa de Quitação Total</span>
+                <span class="text-sm font-bold text-[#2E6F68]">~{{ debtPayoffPlan.length ? Math.max(...debtPayoffPlan.map(d => d.monthsToPayoff)) : 0 }} meses</span>
+              </div>
+              <p class="text-[10px] text-gray-400 max-w-xs">
+                Estratégia {{ debtStrategy === 'snowball' ? 'Bola de Neve' : 'Avalanche' }}: o aporte extra é aplicado integralmente na dívida prioritária até sua quitação, e então redirecionado para a próxima.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: COMPARATIVOS -->
+      <div v-if="currentTab === 'comparisons'" class="space-y-6">
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div class="glass-card p-5">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Receitas</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="monthComparison.incomeDiff >= 0 ? 'bg-emerald-100/80 text-emerald-700' : 'bg-rose-100/80 text-rose-600'">
+                {{ monthComparison.incomeDiff >= 0 ? '+' : '' }}{{ monthComparison.incomePct }}%
+              </span>
+            </div>
+            <div class="text-xl font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(monthComparison.currentIncome) }}</div>
+            <span class="text-[10px] text-gray-400 font-medium">Mês anterior: {{ hideValues ? '••••••' : formatCurrency(monthComparison.previousIncome) }}</span>
+          </div>
+          <div class="glass-card p-5">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Despesas</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="monthComparison.expenseDiff <= 0 ? 'bg-emerald-100/80 text-emerald-700' : 'bg-rose-100/80 text-rose-600'">
+                {{ monthComparison.expenseDiff >= 0 ? '+' : '' }}{{ monthComparison.expensePct }}%
+              </span>
+            </div>
+            <div class="text-xl font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(monthComparison.currentExpenses) }}</div>
+            <span class="text-[10px] text-gray-400 font-medium">Mês anterior: {{ hideValues ? '••••••' : formatCurrency(monthComparison.previousExpenses) }}</span>
+          </div>
+          <div class="glass-card p-5">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Saldo</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="monthComparison.balanceDiff >= 0 ? 'bg-emerald-100/80 text-emerald-700' : 'bg-rose-100/80 text-rose-600'">
+                {{ monthComparison.balanceDiff >= 0 ? '+' : '' }}{{ hideValues ? '••••' : formatCurrency(monthComparison.balanceDiff) }}
+              </span>
+            </div>
+            <div class="text-xl font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(monthComparison.currentBalance) }}</div>
+            <span class="text-[10px] text-gray-400 font-medium">Mês anterior: {{ hideValues ? '••••••' : formatCurrency(monthComparison.previousBalance) }}</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="glass-card p-6">
+            <h3 class="text-sm font-bold text-gray-800 tracking-tight mb-4">Despesas por Categoria: Mês Atual vs Anterior</h3>
+            <div class="w-full h-64">
+              <canvas id="categoryComparisonChart"></canvas>
+            </div>
+          </div>
+
+          <div class="glass-card p-6">
+            <h3 class="text-sm font-bold text-gray-800 tracking-tight mb-4">Gastos por Origem / Cartão</h3>
+            <div class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
+              <div v-for="s in paymentSourceComparison" :key="s.source" class="p-3 rounded-2xl bg-white/60 border border-white/80">
+                <div class="flex justify-between items-center mb-1.5">
+                  <span class="text-xs font-bold text-gray-800">{{ s.source }}</span>
+                  <span class="text-[10px] font-bold" :class="s.diff <= 0 ? 'text-emerald-600' : 'text-rose-600'">
+                    {{ s.diff >= 0 ? '+' : '' }}{{ s.pct }}%
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 h-1.5 rounded-full bg-gray-200/70 overflow-hidden">
+                    <div class="h-full bg-[#2E6F68] rounded-full" :style="{ width: s.barWidth + '%' }"></div>
+                  </div>
+                  <span class="text-[10px] font-semibold text-gray-500 w-20 text-right">{{ hideValues ? '••••••' : formatCurrency(s.current) }}</span>
+                </div>
+              </div>
+              <div v-if="paymentSourceComparison.length === 0" class="text-center py-6 text-gray-400 text-xs">
+                Sem despesas suficientes para comparar.
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </main>
@@ -614,9 +790,13 @@
         const instForm = ref({ description: '', totalAmount: null, count: 12, categoryId: '', payment_source: 'Cartão Pessoal' });
         const projectionData = ref({ income: 0, expenses: 0, txs: [] });
 
+        const debtStrategy = ref('snowball');
+        const extraPayment = ref(0);
+
         let categoryChartInstance = null;
         let monthlyChartInstance = null;
         let deleveragingChartInstance = null;
+        let categoryComparisonChartInstance = null;
 
         const fetchData = async () => {
           try {
@@ -648,6 +828,7 @@
           currentTab.value = tab;
           if (tab === 'dashboard') renderCharts();
           if (tab === 'planner') renderDeleveragingChart();
+          if (tab === 'comparisons') renderComparisonChart();
           nextTick(() => lucide.createIcons());
         };
 
@@ -903,6 +1084,123 @@
           return ((amount / projectionData.value.expenses) * 100).toFixed(0);
         };
 
+        // --- Dívida ativa total (parcelas restantes em aberto de compras parceladas) ---
+        const totalActiveDebt = computed(() => {
+          return transactions.value
+            .filter(t => t.total_installments > 1 && !t.is_paid)
+            .reduce((acc, t) => acc + Number(t.amount), 0);
+        });
+
+        // --- Índice de Saúde Financeira (0-100) ---
+        // 40% taxa de poupança, 30% comprometimento de renda, 30% dívida ativa vs renda anual
+        const healthScore = computed(() => {
+          const savings = parseFloat(metrics.value.savingsRate) || 0;
+          const commitment = parseFloat(projectionCompromiseRate.value) || 100;
+          const annualIncome = metrics.value.income * 12;
+          const debtRatio = annualIncome > 0 ? (totalActiveDebt.value / annualIncome) * 100 : 100;
+
+          const savingsScore = Math.max(0, Math.min(100, savings * 2.5)); // 40% já é "ótimo"
+          const commitmentScore = Math.max(0, Math.min(100, 100 - (commitment - 60)));
+          const debtScore = Math.max(0, Math.min(100, 100 - debtRatio * 2));
+
+          const score = Math.round(savingsScore * 0.4 + commitmentScore * 0.3 + debtScore * 0.3);
+
+          let label = 'Crítica', color = '#E76F51', message = 'Seus compromissos estão consumindo quase toda a renda. Priorize reduzir despesas e dívidas.';
+          if (score >= 80) { label = 'Excelente'; color = '#2E6F68'; message = 'Parabéns! Sua taxa de poupança e nível de endividamento estão muito saudáveis.'; }
+          else if (score >= 60) { label = 'Boa'; color = '#3B82F6'; message = 'Você está no caminho certo. Continue monitorando dívidas e gastos fixos.'; }
+          else if (score >= 40) { label = 'Atenção'; color = '#D9822B'; message = 'Seu comprometimento de renda está elevado. Avalie renegociar ou antecipar dívidas.'; }
+
+          return { score: Math.max(0, Math.min(100, score)), label, color, message };
+        });
+
+        // --- Comparativo Mês Atual vs Mês Anterior ---
+        const monthComparison = computed(() => {
+          const now = new Date();
+          const currentKey = now.toISOString().substr(0, 7);
+          const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const prevKey = prevDate.toISOString().substr(0, 7);
+
+          const sum = (key, type) => transactions.value
+            .filter(t => t.date.startsWith(key) && t.type === type)
+            .reduce((a, b) => a + Number(b.amount), 0);
+
+          const currentIncome = sum(currentKey, 'income');
+          const previousIncome = sum(prevKey, 'income');
+          const currentExpenses = sum(currentKey, 'expense');
+          const previousExpenses = sum(prevKey, 'expense');
+          const currentBalance = currentIncome - currentExpenses;
+          const previousBalance = previousIncome - previousExpenses;
+
+          const pct = (curr, prev) => prev > 0 ? (((curr - prev) / prev) * 100).toFixed(1) : (curr > 0 ? 100 : 0);
+
+          return {
+            currentIncome, previousIncome, incomeDiff: currentIncome - previousIncome, incomePct: pct(currentIncome, previousIncome),
+            currentExpenses, previousExpenses, expenseDiff: currentExpenses - previousExpenses, expensePct: pct(currentExpenses, previousExpenses),
+            currentBalance, previousBalance, balanceDiff: currentBalance - previousBalance
+          };
+        });
+
+        // --- Comparativo de Gastos por Origem / Cartão (mês atual vs anterior) ---
+        const paymentSourceComparison = computed(() => {
+          const now = new Date();
+          const currentKey = now.toISOString().substr(0, 7);
+          const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const prevKey = prevDate.toISOString().substr(0, 7);
+
+          const result = paymentSources.map(source => {
+            const current = transactions.value
+              .filter(t => t.type === 'expense' && (t.payment_source || 'Cartão Pessoal') === source && t.date.startsWith(currentKey))
+              .reduce((a, b) => a + Number(b.amount), 0);
+            const previous = transactions.value
+              .filter(t => t.type === 'expense' && (t.payment_source || 'Cartão Pessoal') === source && t.date.startsWith(prevKey))
+              .reduce((a, b) => a + Number(b.amount), 0);
+            const diff = current - previous;
+            const pct = previous > 0 ? (((current - previous) / previous) * 100).toFixed(1) : (current > 0 ? 100 : 0);
+            return { source, current, previous, diff, pct };
+          }).filter(s => s.current > 0 || s.previous > 0);
+
+          const maxVal = Math.max(...result.map(s => s.current), 1);
+          return result.map(s => ({ ...s, barWidth: Math.max(4, (s.current / maxVal) * 100) })).sort((a, b) => b.current - a.current);
+        });
+
+        // --- Simulador de Quitação de Dívidas (Bola de Neve / Avalanche) ---
+        const debtPayoffPlan = computed(() => {
+          const groups = {};
+          transactions.value
+            .filter(t => t.total_installments > 1 && t.installment_group_id)
+            .forEach(t => {
+              const gid = t.installment_group_id;
+              if (!groups[gid]) {
+                groups[gid] = {
+                  groupId: gid,
+                  description: (t.description || '').replace(/\s*\(\d+\/\d+\)\s*$/, ''),
+                  paymentSource: t.payment_source || 'Cartão Pessoal',
+                  installmentValue: Number(t.amount),
+                  remainingInstallments: 0,
+                  remainingBalance: 0
+                };
+              }
+              if (!t.is_paid) {
+                groups[gid].remainingInstallments += 1;
+                groups[gid].remainingBalance += Number(t.amount);
+              }
+            });
+
+          let debts = Object.values(groups).filter(d => d.remainingInstallments > 0);
+
+          debts = debtStrategy.value === 'snowball'
+            ? debts.sort((a, b) => a.remainingBalance - b.remainingBalance)
+            : debts.sort((a, b) => b.installmentValue - a.installmentValue);
+
+          // Simulação simplificada: o aporte extra é aplicado integralmente à dívida prioritária
+          let extra = Number(extraPayment.value) || 0;
+          return debts.map((d, idx) => {
+            const monthlyTowardsThis = idx === 0 ? d.installmentValue + extra : d.installmentValue;
+            const monthsToPayoff = monthlyTowardsThis > 0 ? Math.ceil(d.remainingBalance / monthlyTowardsThis) : d.remainingInstallments;
+            return { ...d, monthsToPayoff: Math.min(monthsToPayoff, d.remainingInstallments) };
+          });
+        });
+
         const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
         const formatDate = (dateStr) => {
           if (!dateStr) return '';
@@ -1056,6 +1354,45 @@
           });
         };
 
+        const renderComparisonChart = async () => {
+          await nextTick();
+          if (currentTab.value !== 'comparisons') return;
+
+          const canvas = document.getElementById('categoryComparisonChart');
+          if (!canvas) return;
+          if (categoryComparisonChartInstance) categoryComparisonChartInstance.destroy();
+
+          const now = new Date();
+          const currentKey = now.toISOString().substr(0, 7);
+          const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const prevKey = prevDate.toISOString().substr(0, 7);
+
+          const labels = categories.value.map(c => c.name);
+          const currentData = categories.value.map(c =>
+            transactions.value.filter(t => t.category_id === c.id && t.type === 'expense' && t.date.startsWith(currentKey)).reduce((a, b) => a + Number(b.amount), 0)
+          );
+          const previousData = categories.value.map(c =>
+            transactions.value.filter(t => t.category_id === c.id && t.type === 'expense' && t.date.startsWith(prevKey)).reduce((a, b) => a + Number(b.amount), 0)
+          );
+
+          categoryComparisonChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: labels.length ? labels : ['Sem categorias'],
+              datasets: [
+                { label: 'Mês Anterior', data: previousData, backgroundColor: 'rgba(74, 96, 122, 0.55)', borderRadius: 6 },
+                { label: 'Mês Atual', data: currentData, backgroundColor: '#2E6F68', borderRadius: 6 }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } } },
+              scales: { x: { grid: { display: false } }, y: { display: false } }
+            }
+          });
+        };
+
         onMounted(() => {
           fetchData();
           lucide.createIcons();
@@ -1064,7 +1401,8 @@
         return {
           currentTab, switchTab, hideValues, openModal, isEditing, dbStatus, dbStatusText, metrics, customGreetingTitle, financialSummaryText, currentMonthAllTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
           filteredTransactions, recurringTransactions, filterSearch, filterType, filterSource, selectedProjectionMonth, projectionData, topProjectedExpenses, topProjectedIncome, projectionBySource, projectionCompromiseRate,
-          txForm, recForm, instForm, openCreateModal, openEditModal, closeModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate
+          txForm, recForm, instForm, openCreateModal, openEditModal, closeModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate,
+          totalActiveDebt, healthScore, monthComparison, paymentSourceComparison, debtStrategy, extraPayment, debtPayoffPlan
         };
       }
     }).mount('#app');
