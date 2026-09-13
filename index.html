@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Bankio Mobile — Cupertino Glass</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finanças Pessoais — Cupertino Glass Pro</title>
   
   <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -19,259 +19,598 @@
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
-      background: radial-gradient(circle at 50% 0%, #E8F0FE 0%, #F4F6F9 60%, #E2E8F0 100%);
+      background: radial-gradient(circle at 50% 0%, #E8F0FE 0%, #F4F6F9 50%, #E2E8F0 100%);
       min-height: 100vh;
       color: #1F2937;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
     }
 
-    /* Glassmorphic Cards Otimizados para Mobile (S24+) */
+    /* Glassmorphic Cards Estilo Cupertino */
     .glass-card {
-      background: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.65);
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.75);
-      border-radius: 24px;
-      box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 22px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card:hover {
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.07);
     }
 
-    .glass-bottom-bar {
-      background: rgba(255, 255, 255, 0.75);
+    .glass-sidebar {
+      background: rgba(255, 255, 255, 0.45);
       backdrop-filter: blur(25px) saturate(200%);
-      -webkit-backdrop-filter: blur(25px) saturate(200%);
-      border-top: 1px solid rgba(255, 255, 255, 0.6);
+      border-right: 1px solid rgba(255, 255, 255, 0.5);
     }
 
     .glass-input {
-      background: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.6);
       border: 1px solid rgba(209, 213, 219, 0.4);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
     }
     .glass-input:focus {
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.9);
       border-color: #2E6F68;
+      box-shadow: 0 0 0 3px rgba(46, 111, 104, 0.15);
       outline: none;
     }
 
-    .custom-scrollbar::-webkit-scrollbar { display: none; }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
   </style>
 </head>
-<body class="pb-24">
-  <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col justify-between px-4 pt-4">
+<body>
+  <div id="app" class="flex h-screen overflow-hidden">
     
-    <!-- Header Topbar Móvel -->
-    <header class="flex justify-between items-center my-3">
-      <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 bg-gradient-to-br from-[#2E6F68] to-[#1E4844] text-white rounded-2xl flex items-center justify-center shadow-md shadow-[#2E6F68]/20">
-          <i data-lucide="wallet" class="w-4 h-4"></i>
-        </div>
-        <div>
-          <h1 class="text-base font-bold text-gray-800 leading-tight">Olá, Pablo 👋</h1>
-          <p class="text-[10px] text-gray-500 font-medium">{{ greetingPeriod }}</p>
-        </div>
-      </div>
-      <button @click="hideValues = !hideValues" class="p-2.5 rounded-2xl glass-card text-gray-600 active:scale-95 transition">
-        <i :data-lucide="hideValues ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
-      </button>
-    </header>
-
-    <!-- ABA 1: DASHBOARD MÓVEL -->
-    <main v-if="currentTab === 'dashboard'" class="space-y-4">
-      
-      <!-- Card Saldo Principal estilo Wallet Pass -->
-      <div class="glass-card p-5 bg-gradient-to-br from-[#2E6F68] to-[#1E4844] text-white border-none shadow-xl shadow-[#2E6F68]/20 relative overflow-hidden">
-        <div class="flex justify-between items-start mb-3">
+    <!-- Sidebar Navegação -->
+    <aside class="w-64 glass-sidebar p-6 flex flex-col justify-between hidden md:flex z-20">
+      <div>
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 bg-gradient-to-br from-[#2E6F68] to-[#1E4844] text-white rounded-2xl flex items-center justify-center shadow-md shadow-[#2E6F68]/20">
+            <i data-lucide="wallet" class="w-5 h-5"></i>
+          </div>
           <div>
-            <span class="text-[10px] font-bold text-emerald-200 uppercase tracking-wider block">Saldo do Mês</span>
-            <div class="text-3xl font-extrabold tracking-tight mt-0.5">
+            <span class="font-bold text-base text-gray-800 tracking-tight block leading-none">Bankio</span>
+            <span class="text-[10px] text-gray-400 font-medium">FINANÇAS PESSOAIS</span>
+          </div>
+        </div>
+
+        <div class="text-[10px] font-bold text-gray-400 tracking-wider mb-3 px-3 uppercase">Menu Principal</div>
+        <nav class="space-y-1.5">
+          <button @click="switchTab('dashboard')" :class="{'bg-[#2E6F68] text-white shadow-lg shadow-[#2E6F68]/20': currentTab === 'dashboard', 'text-gray-600 hover:bg-white/50': currentTab !== 'dashboard'}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+          </button>
+          <button @click="switchTab('transactions')" :class="{'bg-[#2E6F68] text-white shadow-lg shadow-[#2E6F68]/20': currentTab === 'transactions', 'text-gray-600 hover:bg-white/50': currentTab !== 'transactions'}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition">
+            <i data-lucide="arrow-left-right" class="w-4 h-4"></i> Transações
+          </button>
+          <button @click="switchTab('recurring')" :class="{'bg-[#2E6F68] text-white shadow-lg shadow-[#2E6F68]/20': currentTab === 'recurring', 'text-gray-600 hover:bg-white/50': currentTab !== 'recurring'}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Contas Fixas
+          </button>
+          <button @click="switchTab('installments')" :class="{'bg-[#2E6F68] text-white shadow-lg shadow-[#2E6F68]/20': currentTab === 'installments', 'text-gray-600 hover:bg-white/50': currentTab !== 'installments'}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition">
+            <i data-lucide="credit-card" class="w-4 h-4"></i> Parcelados
+          </button>
+          <button @click="switchTab('planner')" :class="{'bg-[#2E6F68] text-white shadow-lg shadow-[#2E6F68]/20': currentTab === 'planner', 'text-gray-600 hover:bg-white/50': currentTab !== 'planner'}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition">
+            <i data-lucide="calendar-range" class="w-4 h-4"></i> Projeção Futura
+          </button>
+        </nav>
+      </div>
+
+      <div class="glass-card p-4 text-center">
+        <p class="text-[11px] font-medium text-gray-500">Saldo Previsto no Mês</p>
+        <p class="text-sm font-bold text-gray-800 mt-0.5">{{ hideValues ? '••••••' : formatCurrency(metrics.balance) }}</p>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE CONTEÚDO -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto custom-scrollbar p-6 md:p-8">
+      
+      <!-- Header Topbar -->
+      <header class="flex justify-between items-center mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800 tracking-tight">{{ customGreetingTitle }}</h1>
+          <p class="text-xs text-gray-500 font-medium mt-0.5">{{ financialSummaryText }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button @click="hideValues = !hideValues" class="p-2.5 rounded-2xl glass-card text-gray-600 hover:bg-white transition flex items-center justify-center shadow-sm" title="Ocultar Valores">
+            <i :data-lucide="hideValues ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
+          </button>
+          <button @click="openModal = true" class="bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white text-xs font-semibold px-5 py-2.5 rounded-2xl flex items-center gap-2 shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Nova Transação
+          </button>
+        </div>
+      </header>
+
+      <!-- TAB: DASHBOARD -->
+      <div v-if="currentTab === 'dashboard'" class="space-y-6">
+        
+        <!-- Cards Resumo das Finanças -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="glass-card p-5">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Receitas</span>
+              <div class="w-7 h-7 bg-emerald-100/80 text-emerald-700 rounded-xl flex items-center justify-center">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 tracking-tight">
+              {{ hideValues ? '••••••' : formatCurrency(metrics.income) }}
+            </div>
+            <span class="text-[10px] text-emerald-600 font-medium mt-1 inline-block">Mês vigente</span>
+          </div>
+
+          <div class="glass-card p-5">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Despesas</span>
+              <div class="w-7 h-7 bg-rose-100/80 text-rose-600 rounded-xl flex items-center justify-center">
+                <i data-lucide="trending-down" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 tracking-tight">
+              {{ hideValues ? '••••••' : formatCurrency(metrics.expenses) }}
+            </div>
+            <span class="text-[10px] text-rose-500 font-medium mt-1 inline-block">Total lançado</span>
+          </div>
+
+          <div class="glass-card p-5">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Saldo Atual</span>
+              <div class="w-7 h-7 bg-blue-100/80 text-blue-700 rounded-xl flex items-center justify-center">
+                <i data-lucide="scale" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 tracking-tight">
               {{ hideValues ? '••••••' : formatCurrency(metrics.balance) }}
             </div>
+            <span class="text-[10px] text-gray-500 font-medium mt-1 inline-block">Balanço do mês</span>
           </div>
-          <span class="text-[10px] bg-white/15 px-2.5 py-1 rounded-full font-semibold border border-white/20">
-            Poupança {{ metrics.savingsRate }}%
-          </span>
-        </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-3 border-t border-white/10 text-xs">
-          <div>
-            <span class="text-[10px] text-emerald-200/80 font-medium block">Entradas</span>
-            <span class="font-bold text-sm text-emerald-300">{{ hideValues ? '••••' : formatCurrency(metrics.income) }}</span>
-          </div>
-          <div>
-            <span class="text-[10px] text-emerald-200/80 font-medium block">Saídas</span>
-            <span class="font-bold text-sm text-rose-300">{{ hideValues ? '••••' : formatCurrency(metrics.expenses) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Botões de Ação Rápida no Polegar -->
-      <div class="grid grid-cols-2 gap-3">
-        <button @click="openQuickAdd('expense')" class="glass-card p-3.5 flex items-center justify-center gap-2 text-rose-600 font-bold text-xs active:scale-95 transition bg-rose-50/40 border-rose-100">
-          <div class="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center">
-            <i data-lucide="minus" class="w-3.5 h-3.5"></i>
-          </div>
-          Nova Despesa
-        </button>
-        <button @click="openQuickAdd('income')" class="glass-card p-3.5 flex items-center justify-center gap-2 text-emerald-700 font-bold text-xs active:scale-95 transition bg-emerald-50/40 border-emerald-100">
-          <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-          </div>
-          Nova Receita
-        </button>
-      </div>
-
-      <!-- Widget: Checklist de Contas em Aberto (Somente Pendentes) -->
-      <div class="glass-card p-4 border-l-4 border-l-amber-500">
-        <div class="flex justify-between items-center mb-2.5">
-          <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-            <i data-lucide="check-square" class="w-3.5 h-3.5 text-amber-600"></i> Contas em Aberto
-          </span>
-          <span class="text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">{{ openTransactionsOnly.length }} pendente(s)</span>
-        </div>
-        <div class="space-y-2 max-h-44 overflow-y-auto custom-scrollbar">
-          <div v-for="t in openTransactionsOnly" :key="t.id" class="flex justify-between items-center p-2.5 rounded-xl bg-white/60 border border-white/80 text-xs">
-            <div class="flex items-center gap-2">
-              <input type="checkbox" :checked="t.is_paid" @change="togglePaidStatus(t)" class="rounded text-[#2E6F68] w-4 h-4 cursor-pointer">
-              <div>
-                <span class="font-bold text-gray-800 block text-[11px] leading-tight">{{ t.description }}</span>
-                <span class="text-[9px] text-gray-500">{{ t.payment_source || 'Cartão' }} • Vence {{ formatDate(t.date) }}</span>
+          <div class="glass-card p-5 bg-gradient-to-br from-[#2E6F68] to-[#1E4844] text-white border-none shadow-xl shadow-[#2E6F68]/20">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-emerald-200 uppercase tracking-wider">Taxa de Poupança</span>
+              <div class="w-7 h-7 bg-white/10 text-white rounded-xl flex items-center justify-center">
+                <i data-lucide="pie-chart" class="w-4 h-4"></i>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-xs text-rose-600">{{ hideValues ? '••••' : formatCurrency(t.amount) }}</span>
-              <button @click="openEditModal(t)" class="text-gray-400 hover:text-gray-600 p-1"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-            </div>
-          </div>
-          <div v-if="openTransactionsOnly.length === 0" class="text-center py-4 text-emerald-600 font-semibold text-xs">
-            🎉 Todas as contas estão pagas!
+            <div class="text-2xl font-bold tracking-tight">{{ metrics.savingsRate }}%</div>
+            <span class="text-[10px] text-emerald-200/80 font-medium mt-1 inline-block">Economizado das receitas</span>
           </div>
         </div>
-      </div>
 
-      <!-- Donut Chart Compacto -->
-      <div class="glass-card p-4">
-        <h3 class="text-xs font-bold text-gray-800 mb-2">Gastos por Categoria</h3>
-        <div class="w-full h-40 flex items-center justify-center">
-          <canvas id="mobileCategoryChart"></canvas>
-        </div>
-      </div>
-
-    </main>
-
-    <!-- ABA 2: HISTÓRICO MÓVEL COM EDIÇÃO -->
-    <main v-if="currentTab === 'history'" class="space-y-3">
-      <div class="glass-card p-4">
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-xs font-bold text-gray-800">Lançamentos Recentes</h3>
-          <input v-model="filterSearch" placeholder="Buscar..." class="px-3 py-1 rounded-xl glass-input text-[11px] w-28">
-        </div>
-        <div class="space-y-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
-          <div v-for="t in filteredTransactions" :key="t.id" class="p-3 rounded-2xl bg-white/60 border border-white/80 flex justify-between items-center text-xs">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs" :style="{ backgroundColor: t.categories?.color || '#2E6F68' }">
-                <i :data-lucide="t.categories?.icon || 'tag'" class="w-4 h-4"></i>
+        <!-- Alertas de Vencimentos & Checklist Mensal -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Widget: Vencimentos Próximos -->
+          <div class="glass-card p-6 border-l-4 border-l-amber-500">
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center">
+                  <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                </div>
+                <h3 class="text-sm font-bold text-gray-800 tracking-tight">Vencimentos Próximos</h3>
               </div>
-              <div>
-                <span class="font-bold text-gray-800 block text-[11px] leading-tight">{{ t.description }}</span>
-                <span class="text-[9px] text-gray-500">{{ t.payment_source || 'Cartão' }} • {{ formatDate(t.date) }}</span>
+              <span class="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-2.5 py-1 rounded-full">Próximos 7 dias</span>
+            </div>
+            
+            <div class="space-y-3">
+              <div v-for="t in upcomingDueTransactions" :key="t.id" class="flex items-center justify-between p-3 rounded-2xl bg-white/60 border border-white/80">
+                <div class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                  <div>
+                    <span class="text-xs font-bold text-gray-800 block">{{ t.description }}</span>
+                    <span class="text-[10px] text-gray-500 font-medium">{{ t.payment_source || 'Cartão Pessoal' }} • Vence {{ formatDate(t.date) }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-xs font-bold text-rose-600">{{ hideValues ? '••••••' : formatCurrency(t.amount) }}</span>
+                  <button @click="togglePaidStatus(t)" class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-700 text-[10px] font-bold hover:bg-emerald-200 transition">Pagar</button>
+                </div>
+              </div>
+              <div v-if="upcomingDueTransactions.length === 0" class="text-center py-6 text-gray-400 text-xs">
+                Nenhum vencimento pendente para os próximos 7 dias.
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <div class="text-right">
-                <span class="font-extrabold text-xs block" :class="t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">
-                  {{ t.type === 'income' ? '+' : '-' }} {{ hideValues ? '••••' : formatCurrency(t.amount) }}
-                </span>
-                <button @click="togglePaidStatus(t)" :class="t.is_paid ? 'text-emerald-700' : 'text-amber-600'" class="text-[9px] font-bold">
-                  {{ t.is_paid ? '✓ Pago' : '○ Pendente' }}
-                </button>
+          </div>
+
+          <!-- Widget: Checklist Pendentes -->
+          <div class="glass-card p-6">
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center">
+                  <i data-lucide="check-square" class="w-4 h-4"></i>
+                </div>
+                <h3 class="text-sm font-bold text-gray-800 tracking-tight">Checklist de Contas Pendentes</h3>
               </div>
-              <!-- Botão Editar Transação -->
-              <button @click="openEditModal(t)" class="text-gray-400 hover:text-gray-700 p-1">
-                <i data-lucide="edit-3" class="w-4 h-4"></i>
-              </button>
+              <span class="text-[10px] font-bold text-gray-500">{{ currentMonthPendingCount }} pendente(s)</span>
+            </div>
+
+            <div class="space-y-3 max-h-56 overflow-y-auto custom-scrollbar">
+              <div v-for="t in currentMonthPendingTransactions" :key="t.id" class="flex items-center justify-between p-3 rounded-2xl bg-white/60 border border-white/80">
+                <div class="flex items-center gap-3">
+                  <input type="checkbox" :checked="t.is_paid" @change="togglePaidStatus(t)" class="rounded-md text-[#2E6F68] w-4 h-4 cursor-pointer">
+                  <div>
+                    <span :class="{'line-through text-gray-400': t.is_paid}" class="text-xs font-bold text-gray-800 block">{{ t.description }}</span>
+                    <span class="text-[10px] text-gray-400 font-medium">{{ t.payment_source || 'Cartão Pessoal' }} • {{ t.categories?.name || 'Geral' }}</span>
+                  </div>
+                </div>
+                <span class="text-xs font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(t.amount) }}</span>
+              </div>
+              <div v-if="currentMonthPendingTransactions.length === 0" class="text-center py-6 text-gray-400 text-xs">
+                Todas as contas do mês foram pagas! 🎉
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Gráficos -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="glass-card p-6 lg:col-span-1 flex flex-col justify-between">
+            <h3 class="text-sm font-bold text-gray-800 tracking-tight mb-4">Gastos por Categoria</h3>
+            <div class="w-full h-56 flex items-center justify-center">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+          <div class="glass-card p-6 lg:col-span-2 flex flex-col justify-between">
+            <h3 class="text-sm font-bold text-gray-800 tracking-tight mb-4">Fluxo Mensal do Ano</h3>
+            <div class="w-full h-56">
+              <canvas id="monthlyChart"></canvas>
             </div>
           </div>
         </div>
       </div>
-    </main>
 
-    <!-- BOTTOM NAVIGATION BAR FLUTUANTE -->
-    <nav class="fixed bottom-3 left-4 right-4 max-w-md mx-auto h-14 glass-bottom-bar rounded-3xl flex items-center justify-around px-2 z-30 shadow-lg">
-      <button @click="switchTab('dashboard')" :class="{'text-[#2E6F68] font-bold': currentTab === 'dashboard', 'text-gray-400': currentTab !== 'dashboard'}" class="flex flex-col items-center justify-center w-12 h-full">
-        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-        <span class="text-[9px] mt-0.5">Inicio</span>
-      </button>
-
-      <!-- Botão Central Flutuante (+) Registro Rápido -->
-      <button @click="openQuickAdd('expense')" class="w-12 h-12 bg-gradient-to-br from-[#2E6F68] to-[#1E4844] text-white rounded-full flex items-center justify-center shadow-lg shadow-[#2E6F68]/30 -mt-5 active:scale-90 transition">
-        <i data-lucide="plus" class="w-6 h-6"></i>
-      </button>
-
-      <button @click="switchTab('history')" :class="{'text-[#2E6F68] font-bold': currentTab === 'history', 'text-gray-400': currentTab !== 'history'}" class="flex flex-col items-center justify-center w-12 h-full">
-        <i data-lucide="list" class="w-5 h-5"></i>
-        <span class="text-[9px] mt-0.5">Histórico</span>
-      </button>
-    </nav>
-
-    <!-- MODAL SLIDE-UP DE REGISTRO RÁPIDO & EDIÇÃO -->
-    <div v-if="openModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end justify-center z-50 p-0">
-      <div class="glass-card w-full max-w-md rounded-t-3xl rounded-b-none p-6 space-y-4 animate-slide-up">
-        <div class="flex justify-between items-center border-b border-gray-200/50 pb-3">
-          <h3 class="font-bold text-gray-800 text-sm">
-            {{ isEditing ? '✏️ Editar Transação' : (txForm.type === 'expense' ? '🔴 Nova Despesa' : '🟢 Nova Receita') }}
-          </h3>
-          <button @click="openModal = false" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <!-- TAB: TRANSAÇÕES -->
+      <div v-if="currentTab === 'transactions'" class="glass-card p-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <div>
+            <h3 class="font-bold text-gray-800 text-base">Histórico de Lançamentos</h3>
+            <p class="text-xs text-gray-500">Registro de todas as movimentações financeiras</p>
+          </div>
+          
+          <div class="flex items-center gap-2 flex-wrap w-full md:w-auto">
+            <input v-model="filterSearch" placeholder="Buscar lançamentos..." class="px-3.5 py-2 rounded-xl glass-input text-xs flex-1 md:w-48">
+            <select v-model="filterType" class="px-3.5 py-2 rounded-xl glass-input text-xs">
+              <option value="all">Todos os tipos</option>
+              <option value="income">Receitas (+)</option>
+              <option value="expense">Despesas (-)</option>
+            </select>
+            <select v-model="filterSource" class="px-3.5 py-2 rounded-xl glass-input text-xs">
+              <option value="all">Todas as origens</option>
+              <option v-for="s in paymentSources" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
         </div>
 
-        <form @submit.prevent="saveTransaction" class="space-y-3">
-          <div>
-            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Valor (R$)</label>
-            <input v-model.number="txForm.amount" type="number" step="0.01" placeholder="0,00" autofocus required class="w-full px-4 py-3 rounded-2xl glass-input text-lg font-bold text-gray-800">
-          </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-gray-600">
+            <thead>
+              <tr class="border-b border-gray-200/60 text-gray-400 font-semibold uppercase tracking-wider">
+                <th class="py-3 px-3">Data</th>
+                <th class="py-3 px-3">Descrição</th>
+                <th class="py-3 px-3">Origem / Cartão</th>
+                <th class="py-3 px-3">Categoria</th>
+                <th class="py-3 px-3">Valor</th>
+                <th class="py-3 px-3">Status</th>
+                <th class="py-3 px-3 text-right">Ação</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100/70">
+              <tr v-for="t in filteredTransactions" :key="t.id" class="hover:bg-white/40 transition">
+                <td class="py-3 px-3 font-medium text-gray-500">{{ formatDate(t.date) }}</td>
+                <td class="py-3 px-3 font-semibold text-gray-800 flex items-center gap-2">
+                  {{ t.description }}
+                  <span v-if="t.is_fixed" class="text-[9px] px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-bold">Fixa</span>
+                  <span v-if="t.total_installments > 1" class="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 font-bold">Parcelado</span>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 font-medium text-[10px]">
+                    {{ t.payment_source || 'Cartão Pessoal' }}
+                  </span>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 w-max" :style="{ backgroundColor: (t.categories?.color || '#4A607A') + '18', color: t.categories?.color || '#4A607A' }">
+                    <i :data-lucide="t.categories?.icon || 'tag'" class="w-3 h-3"></i>
+                    {{ t.categories?.name || 'Geral' }}
+                  </span>
+                </td>
+                <td class="py-3 px-3 font-bold text-sm" :class="t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">
+                  {{ t.type === 'income' ? '+' : '-' }} {{ hideValues ? '••••••' : formatCurrency(t.amount) }}
+                </td>
+                <td class="py-3 px-3">
+                  <button @click="togglePaidStatus(t)" :class="t.is_paid ? 'bg-emerald-100/80 text-emerald-800' : 'bg-amber-100/80 text-amber-800'" class="px-2.5 py-1 rounded-full text-[10px] font-bold transition flex items-center gap-1">
+                    <i :data-lucide="t.is_paid ? 'check-circle' : 'clock'" class="w-3 h-3"></i>
+                    {{ t.is_paid ? 'Pago' : 'Pendente' }}
+                  </button>
+                </td>
+                <td class="py-3 px-3 text-right">
+                  <button @click="deleteTransaction(t.id)" class="text-gray-400 hover:text-rose-500 transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-          <div>
-            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Descrição</label>
-            <input v-model="txForm.description" placeholder="Ex: Almoço / Mercado" required class="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs font-medium">
+      <!-- TAB: CONTAS FIXAS -->
+      <div v-if="currentTab === 'recurring'" class="space-y-6">
+        <div class="glass-card p-6">
+          <div class="mb-5">
+            <h3 class="font-bold text-gray-800 text-base">Cadastro de Contas e Receitas Fixas</h3>
+            <p class="text-xs text-gray-500">Cadastre gastos e receitas que se repetem todo mês (ex: Salário, Aluguel, Internet).</p>
           </div>
-
-          <div class="grid grid-cols-2 gap-2">
+          <form @submit.prevent="saveRecurring" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Descrição da Conta Fixa</label>
+              <input v-model="recForm.description" placeholder="Ex: Aluguel da Casa" required class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+            </div>
             <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Cartão / Origem</label>
-              <select v-model="txForm.payment_source" class="w-full px-3 py-2.5 rounded-xl glass-input text-xs font-medium">
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Valor Mensal (R$)</label>
+              <input v-model.number="recForm.amount" type="number" step="0.01" placeholder="1200.00" required class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Origem do Pagamento</label>
+              <select v-model="recForm.payment_source" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
                 <option v-for="s in paymentSources" :key="s" :value="s">{{ s }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Categoria</label>
-              <select v-model="txForm.category_id" required class="w-full px-3 py-2.5 rounded-xl glass-input text-xs font-medium">
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Dia do Vencimento</label>
+              <input v-model.number="recForm.recurrence_day" type="number" placeholder="Dia (1 a 31)" min="1" max="31" required class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Tipo</label>
+              <select v-model="recForm.type" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+                <option value="expense">Despesa Fixa (-)</option>
+                <option value="income">Receita Fixa (+)</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Categoria</label>
+              <select v-model="recForm.category_id" required class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+                <option value="" disabled>Selecione a Categoria</option>
                 <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
             </div>
-          </div>
+            <div class="flex items-end">
+              <button type="submit" class="w-full bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white py-2.5 rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition">
+                Salvar Recorrência
+              </button>
+            </div>
+          </form>
+        </div>
 
-          <!-- Opção de Status do Pagamento (Pago vs Em Aberto) -->
-          <div class="grid grid-cols-2 gap-2">
+        <div class="glass-card p-6">
+          <h4 class="font-bold text-gray-800 text-sm mb-4">Contas Fixas Cadastradas</h4>
+          <div class="space-y-3">
+            <div v-for="r in recurringTransactions" :key="r.id" class="flex items-center justify-between p-4 rounded-2xl bg-white/50 border border-white/80">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white" :style="{ backgroundColor: r.categories?.color || '#2E6F68' }">
+                  <i :data-lucide="r.categories?.icon || 'refresh-cw'" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <span class="text-xs font-bold text-gray-800 block">{{ r.description }}</span>
+                  <span class="text-[10px] text-gray-500 font-medium">Todo dia {{ r.recurrence_day }} • {{ r.payment_source || 'Cartão Pessoal' }} • {{ r.categories?.name }}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-4">
+                <span class="text-xs font-bold" :class="r.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">
+                  {{ r.type === 'income' ? '+' : '-' }} {{ formatCurrency(r.amount) }}
+                </span>
+                <button @click="deleteTransaction(r.id)" class="text-gray-400 hover:text-rose-500 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: GASTO PARCELADO -->
+      <div v-if="currentTab === 'installments'" class="space-y-6">
+        <div class="glass-card p-6">
+          <div class="mb-5">
+            <h3 class="font-bold text-gray-800 text-base">Lançamento de Compra Parcelada</h3>
+            <p class="text-xs text-gray-500">Divisão automática de compras parceladas no Supabase com projeção contínua</p>
+          </div>
+          <form @submit.prevent="saveInstallment" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Descrição da Compra</label>
+              <input v-model="instForm.description" placeholder="Ex: Smartphone" required class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+            </div>
             <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Status do Pagamento</label>
-              <select v-model="txForm.is_paid" class="w-full px-3 py-2.5 rounded-xl glass-input text-xs font-bold" :class="txForm.is_paid ? 'text-emerald-700' : 'text-amber-700'">
-                <option :value="true">Pago / Recebido</option>
-                <option :value="false">Em Aberto / Pendente</option>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Valor Total (R$)</label>
+              <input v-model.number="instForm.totalAmount" type="number" step="0.01" placeholder="2400.00" required class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Nº de Parcelas</label>
+              <input v-model.number="instForm.count" type="number" placeholder="10" min="2" max="72" required class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Origem / Cartão Utilizado</label>
+              <select v-model="instForm.payment_source" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+                <option v-for="s in paymentSources" :key="s" :value="s">{{ s }}</option>
               </select>
             </div>
+            <div class="md:col-span-2">
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Categoria</label>
+              <select v-model="instForm.categoryId" required class="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+                <option value="" disabled>Selecione a Categoria</option>
+                <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button type="submit" class="w-full bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white py-2.5 rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition">
+                Gerar Parcelas
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB: PROJEÇÃO FUTURA COM GRÁFICO DE DESAGRAVAÇÃO DE DÍVIDAS -->
+      <div v-if="currentTab === 'planner'" class="space-y-6">
+        
+        <!-- Header da Projeção e Seletor de Mês -->
+        <div class="glass-card p-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Data</label>
-              <input v-model="txForm.date" type="date" required class="w-full px-3 py-2.5 rounded-xl glass-input text-xs font-medium">
+              <h3 class="font-bold text-gray-800 text-base">Projeção Orçamentária Avançada & Desalavancagem</h3>
+              <p class="text-xs text-gray-500">Estimativa de compromissos futuros e evolução da amortização das dívidas parceladas</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-gray-500">Mês Projetado:</span>
+              <input v-model="selectedProjectionMonth" type="month" @change="calculateProjection" class="px-4 py-2 rounded-xl glass-input text-xs font-bold text-gray-700">
             </div>
           </div>
 
-          <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white rounded-2xl font-bold text-xs shadow-md shadow-[#2E6F68]/20 active:scale-98 transition mt-2">
-            {{ isEditing ? 'Atualizar Transação' : 'Confirmar Lançamento' }}
-          </button>
+          <!-- Cards Principais de Projeção -->
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100">
+              <span class="text-[10px] font-bold text-emerald-700 uppercase">Receita Estimada</span>
+              <p class="text-xl font-bold text-emerald-800 mt-1">{{ hideValues ? '••••••' : formatCurrency(projectionData.income) }}</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-100">
+              <span class="text-[10px] font-bold text-rose-700 uppercase">Despesas Estimadas</span>
+              <p class="text-xl font-bold text-rose-800 mt-1">{{ hideValues ? '••••••' : formatCurrency(projectionData.expenses) }}</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-100">
+              <span class="text-[10px] font-bold text-blue-700 uppercase">Balanço Estimado</span>
+              <p class="text-xl font-bold text-blue-800 mt-1">{{ hideValues ? '••••••' : formatCurrency(projectionData.income - projectionData.expenses) }}</p>
+            </div>
+            <div class="p-4 rounded-2xl border" :class="projectionCompromiseRate > 100 ? 'bg-rose-100/60 border-rose-200' : 'bg-amber-50/70 border-amber-100'">
+              <span class="text-[10px] font-bold uppercase" :class="projectionCompromiseRate > 100 ? 'text-rose-700' : 'text-amber-700'">Comprometimento</span>
+              <p class="text-xl font-bold mt-1" :class="projectionCompromiseRate > 100 ? 'text-rose-800' : 'text-amber-800'">{{ projectionCompromiseRate }}%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOVO: Gráfico Combinado de Desalavancagem de Dívidas e Projeção Futura (12 Meses) -->
+        <div class="glass-card p-6">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+                <i data-lucide="trending-down" class="w-4 h-4 text-purple-600"></i>
+                Curva de Desalavancagem & Amortização (Próximos 12 Meses)
+              </h4>
+              <p class="text-[11px] text-gray-500">Projeção do saldo devedor restante acumulado em relação às receitas e despesas estimadas</p>
+            </div>
+          </div>
+          <div class="w-full h-64">
+            <canvas id="deleveragingChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Seção: Maiores Lançamentos & Distribuição por Cartão/Origem -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Top Maiores Despesas Projetadas -->
+          <div class="glass-card p-6">
+            <h4 class="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
+              <i data-lucide="arrow-down-right" class="w-4 h-4 text-rose-500"></i>
+              Maiores Despesas do Mês
+            </h4>
+            <div class="space-y-3">
+              <div v-for="item in topProjectedExpenses" :key="item.id" class="flex justify-between items-center p-3 rounded-2xl bg-white/50 border border-white/60">
+                <div>
+                  <span class="text-xs font-bold text-gray-800 block">{{ item.description }}</span>
+                  <span class="text-[10px] text-gray-400 font-medium">{{ item.payment_source || 'Cartão Pessoal' }}</span>
+                </div>
+                <span class="text-xs font-bold text-rose-600">{{ hideValues ? '••••••' : formatCurrency(item.amount) }}</span>
+              </div>
+              <div v-if="topProjectedExpenses.length === 0" class="text-center py-6 text-gray-400 text-xs">Sem despesas registradas.</div>
+            </div>
+          </div>
+
+          <!-- Top Receitas Projetadas -->
+          <div class="glass-card p-6">
+            <h4 class="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
+              <i data-lucide="arrow-up-right" class="w-4 h-4 text-emerald-500"></i>
+              Maiores Receitas do Mês
+            </h4>
+            <div class="space-y-3">
+              <div v-for="item in topProjectedIncome" :key="item.id" class="flex justify-between items-center p-3 rounded-2xl bg-white/50 border border-white/60">
+                <div>
+                  <span class="text-xs font-bold text-gray-800 block">{{ item.description }}</span>
+                  <span class="text-[10px] text-gray-400 font-medium">{{ item.payment_source || 'Conta' }}</span>
+                </div>
+                <span class="text-xs font-bold text-emerald-600">{{ hideValues ? '••••••' : formatCurrency(item.amount) }}</span>
+              </div>
+              <div v-if="topProjectedIncome.length === 0" class="text-center py-6 text-gray-400 text-xs">Sem receitas registradas.</div>
+            </div>
+          </div>
+
+          <!-- Origem dos Débitos -->
+          <div class="glass-card p-6">
+            <h4 class="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
+              <i data-lucide="credit-card" class="w-4 h-4 text-blue-500"></i>
+              Gastos por Origem / Cartão
+            </h4>
+            <div class="space-y-3">
+              <div v-for="(amount, source) in projectionBySource" :key="source" class="p-3 rounded-2xl bg-white/50 border border-white/60">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-bold text-gray-700">{{ source }}</span>
+                  <span class="text-xs font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(amount) }}</span>
+                </div>
+                <div class="w-full bg-gray-200/60 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-[#2E6F68] h-1.5 rounded-full" :style="{ width: getSourcePercentage(amount) + '%' }"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Modal Nova Transação -->
+    <div v-if="openModal" class="fixed inset-0 bg-black/25 backdrop-blur-md flex items-center justify-center p-4 z-50">
+      <div class="glass-card p-6 max-w-md w-full shadow-2xl">
+        <h3 class="text-base font-bold text-gray-800 mb-4">Nova Transação Simples</h3>
+        <form @submit.prevent="saveTransaction" class="space-y-3">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Descrição</label>
+            <input v-model="txForm.description" placeholder="Ex: Supermercado" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Valor (R$)</label>
+              <input v-model.number="txForm.amount" type="number" step="0.01" placeholder="150.00" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Tipo</label>
+              <select v-model="txForm.type" class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+                <option value="expense">Despesa</option>
+                <option value="income">Receita</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Origem do Pagamento</label>
+            <select v-model="txForm.payment_source" class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+              <option v-for="s in paymentSources" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Categoria</label>
+            <select v-model="txForm.category_id" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+              <option value="" disabled>Selecione a Categoria</option>
+              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Data do Lançamento</label>
+            <input v-model="txForm.date" type="date" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+          </div>
+          <div class="flex gap-2 pt-3">
+            <button type="button" @click="openModal = false" class="flex-1 py-2.5 bg-gray-200/70 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
+            <button type="submit" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition">Salvar</button>
+          </div>
         </form>
       </div>
     </div>
-
   </div>
 
   <script>
@@ -286,17 +625,25 @@
         const currentTab = ref('dashboard');
         const hideValues = ref(false);
         const openModal = ref(false);
-        const isEditing = ref(false);
-        const editingId = ref(null);
 
         const transactions = ref([]);
         const categories = ref([]);
-        const filterSearch = ref('');
 
         const paymentSources = ['Cartão Pessoal', 'Cartão do Pai', 'Cartão da Irmã', 'Conta Compartilhada', 'Débito / PIX'];
-        const txForm = ref({ description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', is_paid: false, date: new Date().toISOString().substr(0, 10) });
+
+        const filterSearch = ref('');
+        const filterType = ref('all');
+        const filterSource = ref('all');
+        const selectedProjectionMonth = ref(new Date().toISOString().substr(0, 7));
+
+        const txForm = ref({ description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', date: new Date().toISOString().substr(0, 10) });
+        const recForm = ref({ description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', recurrence_day: 5 });
+        const instForm = ref({ description: '', totalAmount: null, count: 12, categoryId: '', payment_source: 'Cartão Pessoal' });
+        const projectionData = ref({ income: 0, expenses: 0, txs: [] });
 
         let categoryChartInstance = null;
+        let monthlyChartInstance = null;
+        let deleveragingChartInstance = null;
 
         const fetchData = async () => {
           const { data: catData } = await supabaseClient.from('categories').select('*');
@@ -305,54 +652,63 @@
           const { data: txData } = await supabaseClient.from('transactions').select('*, categories(*)').order('date', { ascending: false });
           transactions.value = txData || [];
 
-          renderChart();
+          calculateProjection();
+          renderCharts();
         };
 
         const switchTab = (tab) => {
           currentTab.value = tab;
-          if (tab === 'dashboard') renderChart();
-          nextTick(() => lucide.createIcons());
-        };
-
-        const openQuickAdd = (type) => {
-          isEditing.value = false;
-          editingId.value = null;
-          txForm.value = {
-            description: '',
-            amount: null,
-            type: type,
-            category_id: categories.value.length > 0 ? categories.value[0].id : '',
-            payment_source: 'Cartão Pessoal',
-            is_paid: false,
-            date: new Date().toISOString().substr(0, 10)
-          };
-          openModal.value = true;
-          nextTick(() => lucide.createIcons());
-        };
-
-        const openEditModal = (t) => {
-          isEditing.value = true;
-          editingId.value = t.id;
-          txForm.value = {
-            description: t.description,
-            amount: Number(t.amount),
-            type: t.type,
-            category_id: t.category_id,
-            payment_source: t.payment_source || 'Cartão Pessoal',
-            is_paid: t.is_paid,
-            date: t.date
-          };
-          openModal.value = true;
+          if (tab === 'dashboard') renderCharts();
+          if (tab === 'planner') renderDeleveragingChart();
           nextTick(() => lucide.createIcons());
         };
 
         const saveTransaction = async () => {
-          if (isEditing.value && editingId.value) {
-            await supabaseClient.from('transactions').update(txForm.value).eq('id', editingId.value);
-          } else {
-            await supabaseClient.from('transactions').insert([txForm.value]);
-          }
+          await supabaseClient.from('transactions').insert([txForm.value]);
           openModal.value = false;
+          txForm.value = { description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', date: new Date().toISOString().substr(0, 10) };
+          fetchData();
+        };
+
+        const saveRecurring = async () => {
+          await supabaseClient.from('transactions').insert([{
+            description: recForm.value.description,
+            amount: recForm.value.amount,
+            type: recForm.value.type,
+            category_id: recForm.value.category_id,
+            payment_source: recForm.value.payment_source,
+            is_fixed: true,
+            recurrence_day: recForm.value.recurrence_day,
+            date: new Date().toISOString().substr(0, 10)
+          }]);
+          alert('Conta fixa cadastrada com sucesso!');
+          recForm.value = { description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', recurrence_day: 5 };
+          fetchData();
+        };
+
+        const saveInstallment = async () => {
+          const installmentValue = instForm.value.totalAmount / instForm.value.count;
+          const groupId = crypto.randomUUID();
+          const records = [];
+          
+          let startDate = new Date();
+          for (let i = 1; i <= instForm.value.count; i++) {
+            records.push({
+              description: `${instForm.value.description} (${i}/${instForm.value.count})`,
+              amount: installmentValue,
+              type: 'expense',
+              category_id: instForm.value.categoryId,
+              payment_source: instForm.value.payment_source,
+              date: startDate.toISOString().substr(0, 10),
+              installment_group_id: groupId,
+              current_installment: i,
+              total_installments: instForm.value.count
+            });
+            startDate.setMonth(startDate.getMonth() + 1);
+          }
+          await supabaseClient.from('transactions').insert(records);
+          alert('Parcelamento gerado!');
+          instForm.value = { description: '', totalAmount: null, count: 12, categoryId: '', payment_source: 'Cartão Pessoal' };
           fetchData();
         };
 
@@ -362,11 +718,37 @@
           nextTick(() => lucide.createIcons());
         };
 
-        const greetingPeriod = computed(() => {
-          const h = new Date().getHours();
-          if (h >= 12 && h < 18) return 'Boa tarde';
-          if (h >= 18 || h < 5) return 'Boa noite';
-          return 'Bom dia';
+        const deleteTransaction = async (id) => {
+          if (confirm('Deseja realmente remover esta transação?')) {
+            await supabaseClient.from('transactions').delete().eq('id', id);
+            fetchData();
+          }
+        };
+
+        const calculateProjection = () => {
+          const [year, month] = selectedProjectionMonth.value.split('-');
+          const monthlyTxs = transactions.value.filter(t => t.date.startsWith(`${year}-${month}`));
+          
+          const fixedTxs = transactions.value.filter(t => t.is_fixed);
+          const fixedIncome = fixedTxs.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
+          const fixedExpenses = fixedTxs.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
+
+          const income = monthlyTxs.filter(t => t.type === 'income' && !t.is_fixed).reduce((a, b) => a + Number(b.amount), 0) + fixedIncome;
+          const expenses = monthlyTxs.filter(t => t.type === 'expense' && !t.is_fixed).reduce((a, b) => a + Number(b.amount), 0) + fixedExpenses;
+
+          const allTxs = [...monthlyTxs, ...fixedTxs.map(f => ({ ...f, date: `${year}-${month}-${String(f.recurrence_day).padStart(2, '0')}` }))];
+
+          projectionData.value = { income, expenses, txs: allTxs };
+          renderDeleveragingChart();
+          nextTick(() => lucide.createIcons());
+        };
+
+        const customGreetingTitle = computed(() => {
+          const hour = new Date().getHours();
+          let periodGreeting = "Bom dia";
+          if (hour >= 12 && hour < 18) periodGreeting = "Boa tarde";
+          else if (hour >= 18 || hour < 5) periodGreeting = "Boa noite";
+          return `${periodGreeting}, Pablo! Bem-vindo de volta 👋`;
         });
 
         const metrics = computed(() => {
@@ -376,50 +758,230 @@
           const income = currentTxs.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
           const expenses = currentTxs.filter(t => t.type === 'expense').reduce((acc, t) => acc + Number(t.amount), 0);
           const balance = income - expenses;
-          const savingsRate = income > 0 ? (((income - expenses) / income) * 100).toFixed(0) : 0;
+          const savingsRate = income > 0 ? (((income - expenses) / income) * 100).toFixed(1) : 0;
           return { income, expenses, balance, savingsRate };
         });
 
-        // FILTRO ESTRITO: Somente transações em aberto (is_paid = false) do mês vigente para o Checklist
-        const openTransactionsOnly = computed(() => {
+        const financialSummaryText = computed(() => {
+          const rate = parseFloat(metrics.value.savingsRate);
+          if (rate >= 20) return `Sua taxa de poupança está em ${rate}%. Excelente trabalho mantendo o controle!`;
+          if (rate > 0) return `Sua taxa de poupança atual é de ${rate}%. Fique atento aos próximos vencimentos.`;
+          return `Você já comprometeu o total das receitas cadastradas neste mês.`;
+        });
+
+        const currentMonthPendingTransactions = computed(() => {
           const currentMonthStr = new Date().toISOString().substr(0, 7);
-          return transactions.value.filter(t => t.type === 'expense' && !t.is_paid && t.date.startsWith(currentMonthStr));
+          return transactions.value.filter(t => t.type === 'expense' && t.date.startsWith(currentMonthStr));
+        });
+
+        const currentMonthPendingCount = computed(() => {
+          return currentMonthPendingTransactions.value.filter(t => !t.is_paid).length;
+        });
+
+        const upcomingDueTransactions = computed(() => {
+          const today = new Date();
+          const nextWeek = new Date();
+          nextWeek.setDate(today.getDate() + 7);
+
+          return transactions.value.filter(t => {
+            if (t.type !== 'expense' || t.is_paid) return false;
+            const tDate = new Date(t.date + 'T00:00:00');
+            return tDate >= today && tDate <= nextWeek;
+          });
         });
 
         const filteredTransactions = computed(() => {
-          return transactions.value.filter(t => t.description.toLowerCase().includes(filterSearch.value.toLowerCase()));
+          return transactions.value.filter(t => {
+            const matchesSearch = t.description.toLowerCase().includes(filterSearch.value.toLowerCase());
+            const matchesType = filterType.value === 'all' || t.type === filterType.value;
+            const matchesSource = filterSource.value === 'all' || t.payment_source === filterSource.value;
+            return matchesSearch && matchesType && matchesSource;
+          });
         });
+
+        const recurringTransactions = computed(() => transactions.value.filter(t => t.is_fixed));
+
+        const topProjectedExpenses = computed(() => {
+          return projectionData.value.txs.filter(t => t.type === 'expense').sort((a, b) => b.amount - a.amount).slice(0, 5);
+        });
+
+        const topProjectedIncome = computed(() => {
+          return projectionData.value.txs.filter(t => t.type === 'income').sort((a, b) => b.amount - a.amount).slice(0, 5);
+        });
+
+        const projectionBySource = computed(() => {
+          const sources = {};
+          projectionData.value.txs.filter(t => t.type === 'expense').forEach(t => {
+            const src = t.payment_source || 'Cartão Pessoal';
+            sources[src] = (sources[src] || 0) + Number(t.amount);
+          });
+          return sources;
+        });
+
+        const projectionCompromiseRate = computed(() => {
+          if (projectionData.value.income === 0) return 100;
+          return ((projectionData.value.expenses / projectionData.value.income) * 100).toFixed(1);
+        });
+
+        const getSourcePercentage = (amount) => {
+          if (projectionData.value.expenses === 0) return 0;
+          return ((amount / projectionData.value.expenses) * 100).toFixed(0);
+        };
 
         const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
         const formatDate = (dateStr) => {
           if (!dateStr) return '';
           const [y, m, d] = dateStr.split('-');
-          return `${d}/${m}`;
+          return `${d}/${m}/${y}`;
         };
 
-        const renderChart = async () => {
+        // Renderização dos Gráficos do Dashboard
+        const renderCharts = async () => {
           await nextTick();
-          const canvas = document.getElementById('mobileCategoryChart');
+          if (currentTab.value !== 'dashboard') return;
+
+          const catCanvas = document.getElementById('categoryChart');
+          if (catCanvas) {
+            if (categoryChartInstance) categoryChartInstance.destroy();
+
+            const chartLabels = categories.value.map(c => c.name);
+            const chartData = categories.value.map(c => 
+              transactions.value.filter(t => t.category_id === c.id && t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0)
+            );
+
+            categoryChartInstance = new Chart(catCanvas.getContext('2d'), {
+              type: 'doughnut',
+              data: {
+                labels: chartLabels.length ? chartLabels : ['Sem despesas'],
+                datasets: [{
+                  data: chartData.some(v => v > 0) ? chartData : [1],
+                  backgroundColor: ['#2E6F68', '#D9822B', '#4A607A', '#9B51E0', '#E76F51', '#3B82F6', '#6366F1'],
+                  borderWidth: 0
+                }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
+            });
+          }
+
+          const monthlyCanvas = document.getElementById('monthlyChart');
+          if (monthlyCanvas) {
+            if (monthlyChartInstance) monthlyChartInstance.destroy();
+
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const monthlyIncome = new Array(12).fill(0);
+            const monthlyExpenses = new Array(12).fill(0);
+
+            transactions.value.forEach(t => {
+              const monthIdx = parseInt(t.date.split('-')[1]) - 1;
+              if (t.type === 'income') monthlyIncome[monthIdx] += Number(t.amount);
+              else monthlyExpenses[monthIdx] += Number(t.amount);
+            });
+
+            monthlyChartInstance = new Chart(monthlyCanvas.getContext('2d'), {
+              type: 'bar',
+              data: {
+                labels: months,
+                datasets: [
+                  { label: 'Receita', data: monthlyIncome, backgroundColor: '#2E6F68', borderRadius: 6 },
+                  { label: 'Despesa', data: monthlyExpenses, backgroundColor: '#E76F51', borderRadius: 6 }
+                ]
+              },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
+            });
+          }
+        };
+
+        // NOVO: Renderização do Gráfico de Desalavancagem e Amortização de Dívidas (Projeção Futura)
+        const renderDeleveragingChart = async () => {
+          await nextTick();
+          if (currentTab.value !== 'planner') return;
+
+          const canvas = document.getElementById('deleveragingChart');
           if (!canvas) return;
 
-          if (categoryChartInstance) categoryChartInstance.destroy();
+          if (deleveragingChartInstance) deleveragingChartInstance.destroy();
 
-          const chartLabels = categories.value.map(c => c.name);
-          const chartData = categories.value.map(c => 
-            transactions.value.filter(t => t.category_id === c.id && t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0)
-          );
+          const labels = [];
+          const debtBalanceData = [];
+          const projectedExpensesData = [];
+          const projectedIncomeData = [];
 
-          categoryChartInstance = new Chart(canvas.getContext('2d'), {
-            type: 'doughnut',
+          let currentDate = new Date();
+
+          for (let i = 0; i < 12; i++) {
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const monthStr = `${year}-${month}`;
+
+            labels.push(currentDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
+
+            // 1. Dívida restante acumulada de parcelas após este mês
+            const remainingDebt = transactions.value.filter(t => {
+              return t.total_installments > 1 && t.date > `${monthStr}-31`;
+            }).reduce((acc, t) => acc + Number(t.amount), 0);
+
+            // 2. Receita e Despesa total estimada para este mês
+            const monthTxs = transactions.value.filter(t => t.date.startsWith(monthStr));
+            const fixedTxs = transactions.value.filter(t => t.is_fixed);
+            const fixedInc = fixedTxs.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
+            const fixedExp = fixedTxs.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
+
+            const inc = monthTxs.filter(t => t.type === 'income' && !t.is_fixed).reduce((a, b) => a + Number(b.amount), 0) + fixedInc;
+            const exp = monthTxs.filter(t => t.type === 'expense' && !t.is_fixed).reduce((a, b) => a + Number(b.amount), 0) + fixedExp;
+
+            debtBalanceData.push(remainingDebt);
+            projectedExpensesData.push(exp);
+            projectedIncomeData.push(inc);
+
+            currentDate.setMonth(currentDate.getMonth() + 1);
+          }
+
+          deleveragingChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
             data: {
-              labels: chartLabels,
-              datasets: [{
-                data: chartData.some(v => v > 0) ? chartData : [1],
-                backgroundColor: ['#2E6F68', '#D9822B', '#4A607A', '#9B51E0', '#E76F51', '#3B82F6', '#6366F1'],
-                borderWidth: 0
-              }]
+              labels: labels,
+              datasets: [
+                {
+                  type: 'line',
+                  label: 'Saldo Devedor Restante (Dívidas)',
+                  data: debtBalanceData,
+                  borderColor: '#9B51E0',
+                  backgroundColor: 'rgba(155, 81, 224, 0.1)',
+                  borderWidth: 2.5,
+                  fill: true,
+                  tension: 0.3,
+                  yAxisID: 'y1'
+                },
+                {
+                  type: 'bar',
+                  label: 'Despesas Projetadas',
+                  data: projectedExpensesData,
+                  backgroundColor: 'rgba(231, 111, 81, 0.85)',
+                  borderRadius: 6,
+                  yAxisID: 'y'
+                },
+                {
+                  type: 'bar',
+                  label: 'Receitas Projetadas',
+                  data: projectedIncomeData,
+                  backgroundColor: 'rgba(46, 111, 104, 0.85)',
+                  borderRadius: 6,
+                  yAxisID: 'y'
+                }
+              ]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }
+              },
+              scales: {
+                x: { grid: { display: false } },
+                y: { type: 'linear', display: false, position: 'left' },
+                y1: { type: 'linear', display: false, position: 'right', grid: { drawOnChartArea: false } }
+              }
+            }
           });
         };
 
@@ -429,8 +991,9 @@
         });
 
         return {
-          currentTab, switchTab, hideValues, openModal, isEditing, metrics, greetingPeriod, openTransactionsOnly, filteredTransactions, paymentSources, categories, filterSearch,
-          txForm, openQuickAdd, openEditModal, saveTransaction, togglePaidStatus, formatCurrency, formatDate
+          currentTab, switchTab, hideValues, openModal, metrics, customGreetingTitle, financialSummaryText, currentMonthPendingTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
+          filteredTransactions, recurringTransactions, filterSearch, filterType, filterSource, selectedProjectionMonth, projectionData, topProjectedExpenses, topProjectedIncome, projectionBySource, projectionCompromiseRate,
+          txForm, recForm, instForm, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate
         };
       }
     }).mount('#app');
