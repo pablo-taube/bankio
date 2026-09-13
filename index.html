@@ -107,7 +107,6 @@
           <p class="text-sm font-bold text-gray-800 mt-0.5">{{ hideValues ? '••••••' : formatCurrency(metrics.balance) }}</p>
         </div>
 
-        <!-- Barra Discreta de Status de Conexão DB -->
         <div class="px-3 py-2 rounded-xl bg-white/40 border border-white/60 flex items-center justify-between text-[10px] font-medium text-gray-500">
           <div class="flex items-center gap-2">
             <span class="relative flex h-2 w-2">
@@ -123,8 +122,6 @@
 
     <!-- ÁREA DE CONTEÚDO -->
     <main class="flex-1 flex flex-col h-screen overflow-y-auto custom-scrollbar p-6 md:p-8">
-      
-      <!-- Header Topbar -->
       <header class="flex justify-between items-center mb-6">
         <div>
           <h1 class="text-2xl font-bold text-gray-800 tracking-tight">{{ customGreetingTitle }}</h1>
@@ -142,8 +139,6 @@
 
       <!-- TAB: DASHBOARD -->
       <div v-if="currentTab === 'dashboard'" class="space-y-6">
-        
-        <!-- Cards Resumo das Finanças -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div class="glass-card p-5">
             <div class="flex justify-between items-center mb-2">
@@ -234,10 +229,8 @@
           </div>
         </div>
 
-        <!-- Alertas de Vencimentos & Checklist Mensal -->
+        <!-- Alertas & Checklist -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          <!-- Widget: Vencimentos Próximos -->
           <div class="glass-card p-6 border-l-4 border-l-amber-500">
             <div class="flex justify-between items-center mb-4">
               <div class="flex items-center gap-2">
@@ -269,7 +262,6 @@
             </div>
           </div>
 
-          <!-- Widget: Checklist Mensal com Esmaecimento de Contas Pagas -->
           <div class="glass-card p-6">
             <div class="flex justify-between items-center mb-4">
               <div class="flex items-center gap-2">
@@ -303,7 +295,6 @@
               </div>
             </div>
           </div>
-
         </div>
 
         <!-- Gráficos -->
@@ -441,7 +432,7 @@
               </select>
             </div>
             <div class="flex items-end">
-              <button type="submit" class="w-full bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white py-2.5 rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition">
+              <button type="submit" :disabled="isSubmitting" class="w-full bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white py-2.5 rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition disabled:opacity-50">
                 Salvar Recorrência
               </button>
             </div>
@@ -506,14 +497,13 @@
               </select>
             </div>
             <div class="flex items-end">
-              <button type="submit" class="w-full bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white py-2.5 rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition">
+              <button type="submit" :disabled="isSubmitting" class="w-full bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white py-2.5 rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition disabled:opacity-50">
                 Gerar Parcelas
               </button>
             </div>
           </form>
         </div>
 
-        <!-- Tabela de Parcelados Cadastrados -->
         <div class="glass-card p-6">
           <h4 class="font-bold text-gray-800 text-sm mb-4">Parcelados Cadastrados</h4>
           <div class="space-y-3">
@@ -604,7 +594,7 @@
           </div>
         </div>
 
-        <!-- Simulador de Quitação de Dívidas (Desendividamento) -->
+        <!-- Simulador de Quitação -->
         <div class="glass-card p-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-4">
             <div>
@@ -742,7 +732,7 @@
 
     </main>
 
-    <!-- Modal Criar / Editar Transação (Salva automaticamente ao fechar ou confirmar) -->
+    <!-- Modal Criar / Editar Transação -->
     <div v-if="openModal" class="fixed inset-0 bg-black/25 backdrop-blur-md flex items-center justify-center p-4 z-50">
       <div class="glass-card p-6 max-w-md w-full shadow-2xl">
         <h3 class="text-base font-bold text-gray-800 mb-4">{{ isEditing ? 'Editar Transação' : 'Nova Transação Simples' }}</h3>
@@ -791,8 +781,8 @@
             <input v-model="txForm.date" type="date" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
           </div>
           <div class="flex gap-2 pt-3">
-            <button type="button" @click="closeModal" class="flex-1 py-2.5 bg-gray-200/70 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition">Fechar / Salvar</button>
-            <button type="submit" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition">
+            <button type="button" @click="closeModal" class="flex-1 py-2.5 bg-gray-200/70 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
+            <button type="submit" :disabled="isSubmitting" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition disabled:opacity-50">
               {{ isEditing ? 'Atualizar' : 'Salvar' }}
             </button>
           </div>
@@ -833,7 +823,7 @@
           </p>
           <div class="flex gap-2 pt-3">
             <button type="button" @click="openEditInstallmentModalState = false" class="flex-1 py-2.5 bg-gray-200/70 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
-            <button type="submit" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition">
+            <button type="submit" :disabled="isSubmitting" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition disabled:opacity-50">
               Atualizar Grupo
             </button>
           </div>
@@ -856,6 +846,7 @@
         const hideValues = ref(false);
         const openModal = ref(false);
         const isEditing = ref(false);
+        const isSubmitting = ref(false);
         const openEditInstallmentModalState = ref(false);
         const dbStatus = ref('connecting');
 
@@ -966,125 +957,150 @@
           nextTick(() => lucide.createIcons());
         };
 
-        const closeModal = async () => {
-          if (txForm.value.description && txForm.value.amount) {
-            await saveTransaction();
-          } else {
-            openModal.value = false;
-          }
+        const closeModal = () => {
+          openModal.value = false;
+          txForm.value = { id: null, description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', date: new Date().toISOString().substr(0, 10), is_paid: false };
         };
 
         const saveTransaction = async () => {
-          const payload = {
-            description: txForm.value.description,
-            amount: txForm.value.amount,
-            type: txForm.value.type,
-            category_id: txForm.value.category_id,
-            payment_source: txForm.value.payment_source,
-            date: txForm.value.date,
-            is_paid: txForm.value.is_paid
-          };
+          if (isSubmitting.value) return;
+          isSubmitting.value = true;
 
-          if (isEditing.value && txForm.value.id) {
-            const { error } = await supabaseClient.from('transactions').update(payload).eq('id', txForm.value.id);
-            if (error) {
-              alert(`Erro ao atualizar transação: ${error.message}`);
-              return;
+          try {
+            const payload = {
+              description: txForm.value.description,
+              amount: txForm.value.amount,
+              type: txForm.value.type,
+              category_id: txForm.value.category_id,
+              payment_source: txForm.value.payment_source,
+              date: txForm.value.date,
+              is_paid: txForm.value.is_paid
+            };
+
+            if (isEditing.value && txForm.value.id) {
+              const { error } = await supabaseClient
+                .from('transactions')
+                .update(payload)
+                .eq('id', txForm.value.id);
+
+              if (error) throw error;
+            } else if (txForm.value.description && txForm.value.amount) {
+              const { error } = await supabaseClient
+                .from('transactions')
+                .insert([payload]);
+
+              if (error) throw error;
             }
-          } else if (txForm.value.description && txForm.value.amount) {
-            const { error } = await supabaseClient.from('transactions').insert([payload]);
-            if (error) {
-              alert(`Erro ao salvar transação: ${error.message}`);
-              return;
-            }
+
+            openModal.value = false;
+            await fetchData();
+          } catch (error) {
+            console.error('Erro ao salvar transação:', error);
+            alert(`Erro ao salvar transação: ${error.message || error}`);
+          } finally {
+            isSubmitting.value = false;
           }
-
-          openModal.value = false;
-          fetchData();
         };
 
         const saveRecurring = async () => {
-          const { error } = await supabaseClient.from('transactions').insert([{
-            description: recForm.value.description,
-            amount: recForm.value.amount,
-            type: recForm.value.type,
-            category_id: recForm.value.category_id,
-            payment_source: recForm.value.payment_source,
-            is_fixed: true,
-            recurrence_day: recForm.value.recurrence_day,
-            date: new Date().toISOString().substr(0, 10),
-            is_paid: false
-          }]);
+          if (isSubmitting.value) return;
+          isSubmitting.value = true;
 
-          if (error) {
-            alert(`Erro ao salvar conta fixa: ${error.message}`);
-            return;
+          try {
+            const { error } = await supabaseClient.from('transactions').insert([{
+              description: recForm.value.description,
+              amount: recForm.value.amount,
+              type: recForm.value.type,
+              category_id: recForm.value.category_id,
+              payment_source: recForm.value.payment_source,
+              is_fixed: true,
+              recurrence_day: recForm.value.recurrence_day,
+              date: new Date().toISOString().substr(0, 10),
+              is_paid: false
+            }]);
+
+            if (error) throw error;
+
+            alert('Conta fixa cadastrada com sucesso!');
+            recForm.value = { description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', recurrence_day: 5 };
+            await fetchData();
+          } catch (error) {
+            console.error('Erro ao salvar conta fixa:', error);
+            alert(`Erro ao salvar conta fixa: ${error.message || error}`);
+          } finally {
+            isSubmitting.value = false;
           }
-
-          alert('Conta fixa cadastrada com sucesso!');
-          recForm.value = { description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', recurrence_day: 5 };
-          fetchData();
         };
 
         const saveInstallment = async () => {
-          const installmentValue = instForm.value.totalAmount / instForm.value.count;
-          const groupId = crypto.randomUUID();
-          const records = [];
-          
-          let startDate = new Date();
-          for (let i = 1; i <= instForm.value.count; i++) {
-            records.push({
-              description: `${instForm.value.description} (${i}/${instForm.value.count})`,
-              amount: installmentValue,
-              type: 'expense',
-              category_id: instForm.value.categoryId,
-              payment_source: instForm.value.payment_source,
-              date: startDate.toISOString().substr(0, 10),
-              installment_group_id: groupId,
-              current_installment: i,
-              total_installments: instForm.value.count,
-              is_paid: false
-            });
-            startDate.setMonth(startDate.getMonth() + 1);
+          if (isSubmitting.value) return;
+          isSubmitting.value = true;
+
+          try {
+            const installmentValue = instForm.value.totalAmount / instForm.value.count;
+            const groupId = crypto.randomUUID();
+            const records = [];
+            
+            let startDate = new Date();
+            for (let i = 1; i <= instForm.value.count; i++) {
+              records.push({
+                description: `${instForm.value.description} (${i}/${instForm.value.count})`,
+                amount: installmentValue,
+                type: 'expense',
+                category_id: instForm.value.categoryId,
+                payment_source: instForm.value.payment_source,
+                date: startDate.toISOString().substr(0, 10),
+                installment_group_id: groupId,
+                current_installment: i,
+                total_installments: instForm.value.count,
+                is_paid: false
+              });
+              startDate.setMonth(startDate.getMonth() + 1);
+            }
+
+            const { error } = await supabaseClient.from('transactions').insert(records);
+            if (error) throw error;
+
+            alert('Parcelamento gerado!');
+            instForm.value = { description: '', totalAmount: null, count: 12, categoryId: '', payment_source: 'Cartão Pessoal' };
+            await fetchData();
+          } catch (error) {
+            console.error('Erro ao gerar parcelas:', error);
+            alert(`Erro ao gerar parcelas: ${error.message || error}`);
+          } finally {
+            isSubmitting.value = false;
           }
-          const { error } = await supabaseClient.from('transactions').insert(records);
-          if (error) {
-            alert(`Erro ao gerar parcelas: ${error.message}`);
-            return;
-          }
-          alert('Parcelamento gerado!');
-          instForm.value = { description: '', totalAmount: null, count: 12, categoryId: '', payment_source: 'Cartão Pessoal' };
-          fetchData();
         };
 
         const updateInstallmentGroup = async () => {
-          const groupTxs = transactions.value.filter(t => t.installment_group_id === editInstForm.value.groupId);
-          if (!groupTxs.length) return;
+          if (isSubmitting.value) return;
+          isSubmitting.value = true;
 
-          let hasError = false;
-          for (const tx of groupTxs) {
-            const newDesc = `${editInstForm.value.description} (${tx.current_installment}/${tx.total_installments})`;
-            const { error } = await supabaseClient.from('transactions').update({
-              description: newDesc,
-              amount: editInstForm.value.installmentValue,
-              payment_source: editInstForm.value.payment_source,
-              category_id: editInstForm.value.categoryId
-            }).eq('id', tx.id);
+          try {
+            const groupTxs = transactions.value.filter(t => t.installment_group_id === editInstForm.value.groupId);
+            if (!groupTxs.length) return;
 
-            if (error) {
-              hasError = true;
-              console.error(`Erro ao atualizar parcela ${tx.id}:`, error);
+            for (const tx of groupTxs) {
+              const newDesc = `${editInstForm.value.description} (${tx.current_installment}/${tx.total_installments})`;
+              const { error } = await supabaseClient.from('transactions').update({
+                description: newDesc,
+                amount: editInstForm.value.installmentValue,
+                payment_source: editInstForm.value.payment_source,
+                category_id: editInstForm.value.categoryId
+              }).eq('id', tx.id);
+
+              if (error) throw error;
             }
-          }
 
-          if (hasError) {
-            alert('Houve um erro ao atualizar algumas parcelas do grupo.');
-          } else {
             alert('Compra parcelada atualizada com sucesso!');
+            openEditInstallmentModalState.value = false;
+            await fetchData();
+          } catch (error) {
+            console.error('Erro ao atualizar parcelas:', error);
+            alert(`Erro ao atualizar parcelamento: ${error.message || error}`);
+          } finally {
+            isSubmitting.value = false;
           }
-
-          openEditInstallmentModalState.value = false;
-          fetchData();
         };
 
         const togglePaidStatus = async (t) => {
@@ -1566,7 +1582,7 @@
         });
 
         return {
-          currentTab, switchTab, hideValues, openModal, isEditing, openEditInstallmentModalState, dbStatus, dbStatusText, metrics, customGreetingTitle, financialSummaryText, currentMonthAllTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
+          currentTab, switchTab, hideValues, openModal, isEditing, isSubmitting, openEditInstallmentModalState, dbStatus, dbStatusText, metrics, customGreetingTitle, financialSummaryText, currentMonthAllTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
           filteredTransactions, recurringTransactions, installmentGroups, deleteInstallmentGroup, filterSearch, filterType, filterSource, selectedProjectionMonth, projectionData, topProjectedExpenses, topProjectedIncome, projectionBySource, projectionCompromiseRate,
           txForm, recForm, instForm, editInstForm, openCreateModal, openEditModal, openEditInstallmentModal, updateInstallmentGroup, closeModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate,
           totalActiveDebt, healthScore, monthComparison, paymentSourceComparison, debtStrategy, extraPayment, debtPayoffPlan
