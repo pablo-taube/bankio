@@ -98,9 +98,23 @@
         </nav>
       </div>
 
-      <div class="glass-card p-4 text-center">
-        <p class="text-[11px] font-medium text-gray-500">Saldo Previsto no Mês</p>
-        <p class="text-sm font-bold text-gray-800 mt-0.5">{{ hideValues ? '••••••' : formatCurrency(metrics.balance) }}</p>
+      <div class="space-y-3">
+        <div class="glass-card p-4 text-center">
+          <p class="text-[11px] font-medium text-gray-500">Saldo Previsto no Mês</p>
+          <p class="text-sm font-bold text-gray-800 mt-0.5">{{ hideValues ? '••••••' : formatCurrency(metrics.balance) }}</p>
+        </div>
+
+        <!-- Barra Discreta de Status de Conexão DB -->
+        <div class="px-3 py-2 rounded-xl bg-white/40 border border-white/60 flex items-center justify-between text-[10px] font-medium text-gray-500">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2 w-2">
+              <span v-if="dbStatus === 'connected'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span :class="{'bg-emerald-500': dbStatus === 'connected', 'bg-rose-500': dbStatus === 'error', 'bg-amber-500': dbStatus === 'connecting'}" class="relative inline-flex rounded-full h-2 w-2"></span>
+            </span>
+            <span>{{ dbStatusText }}</span>
+          </div>
+          <i data-lucide="database" class="w-3.5 h-3.5 text-gray-400"></i>
+        </div>
       </div>
     </aside>
 
@@ -214,31 +228,37 @@
             </div>
           </div>
 
-          <!-- Widget: Checklist Pendentes (Exibe apenas transações em aberto) -->
+          <!-- Widget: Checklist Mensal com Esmaecimento de Contas Pagas -->
           <div class="glass-card p-6">
             <div class="flex justify-between items-center mb-4">
               <div class="flex items-center gap-2">
                 <div class="w-7 h-7 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center">
                   <i data-lucide="check-square" class="w-4 h-4"></i>
                 </div>
-                <h3 class="text-sm font-bold text-gray-800 tracking-tight">Checklist de Contas Pendentes</h3>
+                <h3 class="text-sm font-bold text-gray-800 tracking-tight">Checklist de Contas do Mês</h3>
               </div>
               <span class="text-[10px] font-bold text-gray-500">{{ currentMonthPendingCount }} pendente(s)</span>
             </div>
 
             <div class="space-y-3 max-h-56 overflow-y-auto custom-scrollbar">
-              <div v-for="t in currentMonthPendingTransactions" :key="t.id" class="flex items-center justify-between p-3 rounded-2xl bg-white/60 border border-white/80">
+              <div v-for="t in currentMonthAllTransactions" :key="t.id" 
+                   :class="{'opacity-50 grayscale bg-gray-50/40 border-gray-200/50': t.is_paid, 'bg-white/60 border-white/80': !t.is_paid}"
+                   class="flex items-center justify-between p-3 rounded-2xl border transition-all duration-300">
                 <div class="flex items-center gap-3">
-                  <input type="checkbox" :checked="t.is_paid" @change="togglePaidStatus(t)" class="rounded-md text-[#2E6F68] w-4 h-4 cursor-pointer">
+                  <input type="checkbox" :checked="t.is_paid" @change="togglePaidStatus(t)" class="rounded-md text-[#2E6F68] focus:ring-[#2E6F68] w-4 h-4 cursor-pointer">
                   <div>
-                    <span class="text-xs font-bold text-gray-800 block">{{ t.description }}</span>
+                    <span :class="{'line-through text-gray-400 font-normal': t.is_paid, 'text-gray-800 font-bold': !t.is_paid}" class="text-xs block transition-all">
+                      {{ t.description }}
+                    </span>
                     <span class="text-[10px] text-gray-400 font-medium">{{ t.payment_source || 'Cartão Pessoal' }} • {{ t.categories?.name || 'Geral' }}</span>
                   </div>
                 </div>
-                <span class="text-xs font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(t.amount) }}</span>
+                <span :class="{'line-through text-gray-400': t.is_paid, 'text-gray-800': !t.is_paid}" class="text-xs font-bold">
+                  {{ hideValues ? '••••••' : formatCurrency(t.amount) }}
+                </span>
               </div>
-              <div v-if="currentMonthPendingTransactions.length === 0" class="text-center py-6 text-gray-400 text-xs">
-                Todas as contas do mês foram pagas! 🎉
+              <div v-if="currentMonthAllTransactions.length === 0" class="text-center py-6 text-gray-400 text-xs">
+                Nenhuma conta cadastrada para este mês.
               </div>
             </div>
           </div>
@@ -298,10 +318,10 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100/70">
-              <tr v-for="t in filteredTransactions" :key="t.id" class="hover:bg-white/40 transition">
+              <tr v-for="t in filteredTransactions" :key="t.id" :class="{'opacity-60 bg-gray-50/20': t.is_paid}" class="hover:bg-white/40 transition">
                 <td class="py-3 px-3 font-medium text-gray-500">{{ formatDate(t.date) }}</td>
                 <td class="py-3 px-3 font-semibold text-gray-800 flex items-center gap-2">
-                  {{ t.description }}
+                  <span :class="{'line-through text-gray-400 font-normal': t.is_paid}">{{ t.description }}</span>
                   <span v-if="t.is_fixed" class="text-[9px] px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-bold">Fixa</span>
                   <span v-if="t.total_installments > 1" class="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 font-bold">Parcelado</span>
                 </td>
@@ -326,11 +346,9 @@
                   </button>
                 </td>
                 <td class="py-3 px-3 text-right flex items-center justify-end gap-1">
-                  <!-- Botão Editar -->
                   <button @click="openEditModal(t)" class="text-gray-400 hover:text-blue-600 transition p-1" title="Editar Lançamento">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                   </button>
-                  <!-- Botão Excluir -->
                   <button @click="deleteTransaction(t.id)" class="text-gray-400 hover:text-rose-500 transition p-1" title="Excluir Lançamento">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                   </button>
@@ -455,10 +473,8 @@
         </div>
       </div>
 
-      <!-- TAB: PROJEÇÃO FUTURA COM GRÁFICO DE DESAGRAVAÇÃO DE DÍVIDAS -->
+      <!-- TAB: PROJEÇÃO FUTURA -->
       <div v-if="currentTab === 'planner'" class="space-y-6">
-        
-        <!-- Header da Projeção e Seletor de Mês -->
         <div class="glass-card p-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
@@ -471,7 +487,6 @@
             </div>
           </div>
 
-          <!-- Cards Principais de Projeção -->
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100">
               <span class="text-[10px] font-bold text-emerald-700 uppercase">Receita Estimada</span>
@@ -492,7 +507,6 @@
           </div>
         </div>
 
-        <!-- Gráfico Combinado de Desalavancagem de Dívidas e Projeção Futura (12 Meses) -->
         <div class="glass-card p-6">
           <div class="flex justify-between items-center mb-4">
             <div>
@@ -507,72 +521,11 @@
             <canvas id="deleveragingChart"></canvas>
           </div>
         </div>
-
-        <!-- Seção: Maiores Lançamentos & Distribuição por Cartão/Origem -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          <!-- Top Maiores Despesas Projetadas -->
-          <div class="glass-card p-6">
-            <h4 class="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
-              <i data-lucide="arrow-down-right" class="w-4 h-4 text-rose-500"></i>
-              Maiores Despesas do Mês
-            </h4>
-            <div class="space-y-3">
-              <div v-for="item in topProjectedExpenses" :key="item.id" class="flex justify-between items-center p-3 rounded-2xl bg-white/50 border border-white/60">
-                <div>
-                  <span class="text-xs font-bold text-gray-800 block">{{ item.description }}</span>
-                  <span class="text-[10px] text-gray-400 font-medium">{{ item.payment_source || 'Cartão Pessoal' }}</span>
-                </div>
-                <span class="text-xs font-bold text-rose-600">{{ hideValues ? '••••••' : formatCurrency(item.amount) }}</span>
-              </div>
-              <div v-if="topProjectedExpenses.length === 0" class="text-center py-6 text-gray-400 text-xs">Sem despesas registradas.</div>
-            </div>
-          </div>
-
-          <!-- Top Receitas Projetadas -->
-          <div class="glass-card p-6">
-            <h4 class="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
-              <i data-lucide="arrow-up-right" class="w-4 h-4 text-emerald-500"></i>
-              Maiores Receitas do Mês
-            </h4>
-            <div class="space-y-3">
-              <div v-for="item in topProjectedIncome" :key="item.id" class="flex justify-between items-center p-3 rounded-2xl bg-white/50 border border-white/60">
-                <div>
-                  <span class="text-xs font-bold text-gray-800 block">{{ item.description }}</span>
-                  <span class="text-[10px] text-gray-400 font-medium">{{ item.payment_source || 'Conta' }}</span>
-                </div>
-                <span class="text-xs font-bold text-emerald-600">{{ hideValues ? '••••••' : formatCurrency(item.amount) }}</span>
-              </div>
-              <div v-if="topProjectedIncome.length === 0" class="text-center py-6 text-gray-400 text-xs">Sem receitas registradas.</div>
-            </div>
-          </div>
-
-          <!-- Origem dos Débitos -->
-          <div class="glass-card p-6">
-            <h4 class="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
-              <i data-lucide="credit-card" class="w-4 h-4 text-blue-500"></i>
-              Gastos por Origem / Cartão
-            </h4>
-            <div class="space-y-3">
-              <div v-for="(amount, source) in projectionBySource" :key="source" class="p-3 rounded-2xl bg-white/50 border border-white/60">
-                <div class="flex justify-between items-center mb-1">
-                  <span class="text-xs font-bold text-gray-700">{{ source }}</span>
-                  <span class="text-xs font-bold text-gray-800">{{ hideValues ? '••••••' : formatCurrency(amount) }}</span>
-                </div>
-                <div class="w-full bg-gray-200/60 rounded-full h-1.5 overflow-hidden">
-                  <div class="bg-[#2E6F68] h-1.5 rounded-full" :style="{ width: getSourcePercentage(amount) + '%' }"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
       </div>
 
     </main>
 
-    <!-- Modal Criar / Editar Transação -->
+    <!-- Modal Criar / Editar Transação (Salva automaticamente ao fechar ou confirmar) -->
     <div v-if="openModal" class="fixed inset-0 bg-black/25 backdrop-blur-md flex items-center justify-center p-4 z-50">
       <div class="glass-card p-6 max-w-md w-full shadow-2xl">
         <h3 class="text-base font-bold text-gray-800 mb-4">{{ isEditing ? 'Editar Transação' : 'Nova Transação Simples' }}</h3>
@@ -601,7 +554,6 @@
                 <option v-for="s in paymentSources" :key="s" :value="s">{{ s }}</option>
               </select>
             </div>
-            <!-- Seleção de Status (Paga / Em Aberto) -->
             <div>
               <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Status</label>
               <select v-model="txForm.is_paid" class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
@@ -622,7 +574,7 @@
             <input v-model="txForm.date" type="date" required class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
           </div>
           <div class="flex gap-2 pt-3">
-            <button type="button" @click="openModal = false" class="flex-1 py-2.5 bg-gray-200/70 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
+            <button type="button" @click="closeModal" class="flex-1 py-2.5 bg-gray-200/70 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition">Fechar / Salvar</button>
             <button type="submit" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition">
               {{ isEditing ? 'Atualizar' : 'Salvar' }}
             </button>
@@ -633,8 +585,8 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://gyrrrwykwffjvgqnepio.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_Zg_buE_f46sWZrE0k5MHAg_jvgmHEw8';
+    const SUPABASE_URL = 'https://SUA_SUPABASE_URL.supabase.co';
+    const SUPABASE_KEY = 'SUA_SUPABASE_ANON_KEY';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
@@ -645,6 +597,7 @@
         const hideValues = ref(false);
         const openModal = ref(false);
         const isEditing = ref(false);
+        const dbStatus = ref('connecting'); // 'connecting' | 'connected' | 'error'
 
         const transactions = ref([]);
         const categories = ref([]);
@@ -666,15 +619,30 @@
         let deleveragingChartInstance = null;
 
         const fetchData = async () => {
-          const { data: catData } = await supabaseClient.from('categories').select('*');
-          categories.value = catData || [];
+          try {
+            dbStatus.value = 'connecting';
+            const { data: catData, error: catErr } = await supabaseClient.from('categories').select('*');
+            if (catErr) throw catErr;
+            categories.value = catData || [];
 
-          const { data: txData } = await supabaseClient.from('transactions').select('*, categories(*)').order('date', { ascending: false });
-          transactions.value = txData || [];
+            const { data: txData, error: txErr } = await supabaseClient.from('transactions').select('*, categories(*)').order('date', { ascending: false });
+            if (txErr) throw txErr;
+            transactions.value = txData || [];
 
-          calculateProjection();
-          renderCharts();
+            dbStatus.value = 'connected';
+            calculateProjection();
+            renderCharts();
+          } catch (error) {
+            console.error('Erro de conexão com Supabase:', error);
+            dbStatus.value = 'error';
+          }
         };
+
+        const dbStatusText = computed(() => {
+          if (dbStatus.value === 'connected') return 'Conectado ao Supabase';
+          if (dbStatus.value === 'error') return 'Erro de Conexão';
+          return 'Conectando ao banco...';
+        });
 
         const switchTab = (tab) => {
           currentTab.value = tab;
@@ -706,6 +674,15 @@
           nextTick(() => lucide.createIcons());
         };
 
+        // Salvar automaticamente ao fechar a modal
+        const closeModal = async () => {
+          if (txForm.value.description && txForm.value.amount) {
+            await saveTransaction();
+          } else {
+            openModal.value = false;
+          }
+        };
+
         const saveTransaction = async () => {
           const payload = {
             description: txForm.value.description,
@@ -719,7 +696,7 @@
 
           if (isEditing.value && txForm.value.id) {
             await supabaseClient.from('transactions').update(payload).eq('id', txForm.value.id);
-          } else {
+          } else if (txForm.value.description && txForm.value.amount) {
             await supabaseClient.from('transactions').insert([payload]);
           }
 
@@ -736,7 +713,8 @@
             payment_source: recForm.value.payment_source,
             is_fixed: true,
             recurrence_day: recForm.value.recurrence_day,
-            date: new Date().toISOString().substr(0, 10)
+            date: new Date().toISOString().substr(0, 10),
+            is_paid: false
           }]);
           alert('Conta fixa cadastrada com sucesso!');
           recForm.value = { description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', recurrence_day: 5 };
@@ -770,8 +748,11 @@
           fetchData();
         };
 
+        // Alterna o status e salva imediatamente no banco de dados
         const togglePaidStatus = async (t) => {
-          await supabaseClient.from('transactions').update({ is_paid: !t.is_paid }).eq('id', t.id);
+          const newStatus = !t.is_paid;
+          t.is_paid = newStatus; // Atualização otimista na UI
+          await supabaseClient.from('transactions').update({ is_paid: newStatus }).eq('id', t.id);
           fetchData();
           nextTick(() => lucide.createIcons());
         };
@@ -827,14 +808,14 @@
           return `Você já comprometeu o total das receitas cadastradas neste mês.`;
         });
 
-        // Filtrando para mostrar APENAS transações do mês vigente que estão em aberto (!is_paid)
-        const currentMonthPendingTransactions = computed(() => {
+        // Todas as despesas do mês vigente para a checklist
+        const currentMonthAllTransactions = computed(() => {
           const currentMonthStr = new Date().toISOString().substr(0, 7);
-          return transactions.value.filter(t => t.type === 'expense' && t.date.startsWith(currentMonthStr) && !t.is_paid);
+          return transactions.value.filter(t => t.type === 'expense' && t.date.startsWith(currentMonthStr));
         });
 
         const currentMonthPendingCount = computed(() => {
-          return currentMonthPendingTransactions.value.length;
+          return currentMonthAllTransactions.value.filter(t => !t.is_paid).length;
         });
 
         const upcomingDueTransactions = computed(() => {
@@ -950,7 +931,6 @@
           }
         };
 
-        // Renderização do Gráfico de Desalavancagem e Amortização de Dívidas (Projeção Futura)
         const renderDeleveragingChart = async () => {
           await nextTick();
           if (currentTab.value !== 'planner') return;
@@ -974,12 +954,10 @@
 
             labels.push(currentDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
 
-            // Dívida restante acumulada de parcelas após este mês
             const remainingDebt = transactions.value.filter(t => {
               return t.total_installments > 1 && t.date > `${monthStr}-31`;
             }).reduce((acc, t) => acc + Number(t.amount), 0);
 
-            // Receita e Despesa total estimada para este mês
             const monthTxs = transactions.value.filter(t => t.date.startsWith(monthStr));
             const fixedTxs = transactions.value.filter(t => t.is_fixed);
             const fixedInc = fixedTxs.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
@@ -1050,9 +1028,9 @@
         });
 
         return {
-          currentTab, switchTab, hideValues, openModal, isEditing, metrics, customGreetingTitle, financialSummaryText, currentMonthPendingTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
+          currentTab, switchTab, hideValues, openModal, isEditing, dbStatus, dbStatusText, metrics, customGreetingTitle, financialSummaryText, currentMonthAllTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
           filteredTransactions, recurringTransactions, filterSearch, filterType, filterSource, selectedProjectionMonth, projectionData, topProjectedExpenses, topProjectedIncome, projectionBySource, projectionCompromiseRate,
-          txForm, recForm, instForm, openCreateModal, openEditModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate
+          txForm, recForm, instForm, openCreateModal, openEditModal, closeModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate
         };
       }
     }).mount('#app');
