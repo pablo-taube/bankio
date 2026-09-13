@@ -117,7 +117,7 @@
           <button @click="hideValues = !hideValues" class="p-2.5 rounded-2xl glass-card text-gray-600 hover:bg-white transition flex items-center justify-center shadow-sm" title="Ocultar Valores">
             <i :data-lucide="hideValues ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
           </button>
-          <button @click="openModal = true" class="bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white text-xs font-semibold px-5 py-2.5 rounded-2xl flex items-center gap-2 shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition">
+          <button @click="openCreateModal" class="bg-gradient-to-r from-[#2E6F68] to-[#1E4844] text-white text-xs font-semibold px-5 py-2.5 rounded-2xl flex items-center gap-2 shadow-md shadow-[#2E6F68]/20 hover:opacity-95 transition">
             <i data-lucide="plus-circle" class="w-4 h-4"></i> Nova Transação
           </button>
         </div>
@@ -214,7 +214,7 @@
             </div>
           </div>
 
-          <!-- Widget: Checklist Pendentes -->
+          <!-- Widget: Checklist Pendentes (Exibe apenas transações em aberto) -->
           <div class="glass-card p-6">
             <div class="flex justify-between items-center mb-4">
               <div class="flex items-center gap-2">
@@ -231,7 +231,7 @@
                 <div class="flex items-center gap-3">
                   <input type="checkbox" :checked="t.is_paid" @change="togglePaidStatus(t)" class="rounded-md text-[#2E6F68] w-4 h-4 cursor-pointer">
                   <div>
-                    <span :class="{'line-through text-gray-400': t.is_paid}" class="text-xs font-bold text-gray-800 block">{{ t.description }}</span>
+                    <span class="text-xs font-bold text-gray-800 block">{{ t.description }}</span>
                     <span class="text-[10px] text-gray-400 font-medium">{{ t.payment_source || 'Cartão Pessoal' }} • {{ t.categories?.name || 'Geral' }}</span>
                   </div>
                 </div>
@@ -325,8 +325,15 @@
                     {{ t.is_paid ? 'Pago' : 'Pendente' }}
                   </button>
                 </td>
-                <td class="py-3 px-3 text-right">
-                  <button @click="deleteTransaction(t.id)" class="text-gray-400 hover:text-rose-500 transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <td class="py-3 px-3 text-right flex items-center justify-end gap-1">
+                  <!-- Botão Editar -->
+                  <button @click="openEditModal(t)" class="text-gray-400 hover:text-blue-600 transition p-1" title="Editar Lançamento">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                  </button>
+                  <!-- Botão Excluir -->
+                  <button @click="deleteTransaction(t.id)" class="text-gray-400 hover:text-rose-500 transition p-1" title="Excluir Lançamento">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -485,7 +492,7 @@
           </div>
         </div>
 
-        <!-- NOVO: Gráfico Combinado de Desalavancagem de Dívidas e Projeção Futura (12 Meses) -->
+        <!-- Gráfico Combinado de Desalavancagem de Dívidas e Projeção Futura (12 Meses) -->
         <div class="glass-card p-6">
           <div class="flex justify-between items-center mb-4">
             <div>
@@ -565,10 +572,10 @@
 
     </main>
 
-    <!-- Modal Nova Transação -->
+    <!-- Modal Criar / Editar Transação -->
     <div v-if="openModal" class="fixed inset-0 bg-black/25 backdrop-blur-md flex items-center justify-center p-4 z-50">
       <div class="glass-card p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-base font-bold text-gray-800 mb-4">Nova Transação Simples</h3>
+        <h3 class="text-base font-bold text-gray-800 mb-4">{{ isEditing ? 'Editar Transação' : 'Nova Transação Simples' }}</h3>
         <form @submit.prevent="saveTransaction" class="space-y-3">
           <div>
             <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Descrição</label>
@@ -587,11 +594,21 @@
               </select>
             </div>
           </div>
-          <div>
-            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Origem do Pagamento</label>
-            <select v-model="txForm.payment_source" class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
-              <option v-for="s in paymentSources" :key="s" :value="s">{{ s }}</option>
-            </select>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Origem do Pagamento</label>
+              <select v-model="txForm.payment_source" class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+                <option v-for="s in paymentSources" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </div>
+            <!-- Seleção de Status (Paga / Em Aberto) -->
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Status</label>
+              <select v-model="txForm.is_paid" class="w-full px-3.5 py-2 rounded-xl glass-input text-xs font-medium">
+                <option :value="false">Em Aberto</option>
+                <option :value="true">Paga</option>
+              </select>
+            </div>
           </div>
           <div>
             <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Categoria</label>
@@ -606,7 +623,9 @@
           </div>
           <div class="flex gap-2 pt-3">
             <button type="button" @click="openModal = false" class="flex-1 py-2.5 bg-gray-200/70 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
-            <button type="submit" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition">Salvar</button>
+            <button type="submit" class="flex-1 py-2.5 bg-[#2E6F68] hover:bg-[#1E4844] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2E6F68]/20 transition">
+              {{ isEditing ? 'Atualizar' : 'Salvar' }}
+            </button>
           </div>
         </form>
       </div>
@@ -614,8 +633,8 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://SUA_SUPABASE_URL.supabase.co';
-    const SUPABASE_KEY = 'SUA_SUPABASE_ANON_KEY';
+    const SUPABASE_URL = 'https://gyrrrwykwffjvgqnepio.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_Zg_buE_f46sWZrE0k5MHAg_jvgmHEw8';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
@@ -625,6 +644,7 @@
         const currentTab = ref('dashboard');
         const hideValues = ref(false);
         const openModal = ref(false);
+        const isEditing = ref(false);
 
         const transactions = ref([]);
         const categories = ref([]);
@@ -636,7 +656,7 @@
         const filterSource = ref('all');
         const selectedProjectionMonth = ref(new Date().toISOString().substr(0, 7));
 
-        const txForm = ref({ description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', date: new Date().toISOString().substr(0, 10) });
+        const txForm = ref({ id: null, description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', date: new Date().toISOString().substr(0, 10), is_paid: false });
         const recForm = ref({ description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', recurrence_day: 5 });
         const instForm = ref({ description: '', totalAmount: null, count: 12, categoryId: '', payment_source: 'Cartão Pessoal' });
         const projectionData = ref({ income: 0, expenses: 0, txs: [] });
@@ -663,10 +683,47 @@
           nextTick(() => lucide.createIcons());
         };
 
+        const openCreateModal = () => {
+          isEditing.value = false;
+          txForm.value = { id: null, description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', date: new Date().toISOString().substr(0, 10), is_paid: false };
+          openModal.value = true;
+          nextTick(() => lucide.createIcons());
+        };
+
+        const openEditModal = (t) => {
+          isEditing.value = true;
+          txForm.value = {
+            id: t.id,
+            description: t.description,
+            amount: t.amount,
+            type: t.type,
+            category_id: t.category_id,
+            payment_source: t.payment_source || 'Cartão Pessoal',
+            date: t.date,
+            is_paid: t.is_paid ?? false
+          };
+          openModal.value = true;
+          nextTick(() => lucide.createIcons());
+        };
+
         const saveTransaction = async () => {
-          await supabaseClient.from('transactions').insert([txForm.value]);
+          const payload = {
+            description: txForm.value.description,
+            amount: txForm.value.amount,
+            type: txForm.value.type,
+            category_id: txForm.value.category_id,
+            payment_source: txForm.value.payment_source,
+            date: txForm.value.date,
+            is_paid: txForm.value.is_paid
+          };
+
+          if (isEditing.value && txForm.value.id) {
+            await supabaseClient.from('transactions').update(payload).eq('id', txForm.value.id);
+          } else {
+            await supabaseClient.from('transactions').insert([payload]);
+          }
+
           openModal.value = false;
-          txForm.value = { description: '', amount: null, type: 'expense', category_id: '', payment_source: 'Cartão Pessoal', date: new Date().toISOString().substr(0, 10) };
           fetchData();
         };
 
@@ -702,7 +759,8 @@
               date: startDate.toISOString().substr(0, 10),
               installment_group_id: groupId,
               current_installment: i,
-              total_installments: instForm.value.count
+              total_installments: instForm.value.count,
+              is_paid: false
             });
             startDate.setMonth(startDate.getMonth() + 1);
           }
@@ -769,13 +827,14 @@
           return `Você já comprometeu o total das receitas cadastradas neste mês.`;
         });
 
+        // Filtrando para mostrar APENAS transações do mês vigente que estão em aberto (!is_paid)
         const currentMonthPendingTransactions = computed(() => {
           const currentMonthStr = new Date().toISOString().substr(0, 7);
-          return transactions.value.filter(t => t.type === 'expense' && t.date.startsWith(currentMonthStr));
+          return transactions.value.filter(t => t.type === 'expense' && t.date.startsWith(currentMonthStr) && !t.is_paid);
         });
 
         const currentMonthPendingCount = computed(() => {
-          return currentMonthPendingTransactions.value.filter(t => !t.is_paid).length;
+          return currentMonthPendingTransactions.value.length;
         });
 
         const upcomingDueTransactions = computed(() => {
@@ -891,7 +950,7 @@
           }
         };
 
-        // NOVO: Renderização do Gráfico de Desalavancagem e Amortização de Dívidas (Projeção Futura)
+        // Renderização do Gráfico de Desalavancagem e Amortização de Dívidas (Projeção Futura)
         const renderDeleveragingChart = async () => {
           await nextTick();
           if (currentTab.value !== 'planner') return;
@@ -915,12 +974,12 @@
 
             labels.push(currentDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
 
-            // 1. Dívida restante acumulada de parcelas após este mês
+            // Dívida restante acumulada de parcelas após este mês
             const remainingDebt = transactions.value.filter(t => {
               return t.total_installments > 1 && t.date > `${monthStr}-31`;
             }).reduce((acc, t) => acc + Number(t.amount), 0);
 
-            // 2. Receita e Despesa total estimada para este mês
+            // Receita e Despesa total estimada para este mês
             const monthTxs = transactions.value.filter(t => t.date.startsWith(monthStr));
             const fixedTxs = transactions.value.filter(t => t.is_fixed);
             const fixedInc = fixedTxs.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
@@ -991,9 +1050,9 @@
         });
 
         return {
-          currentTab, switchTab, hideValues, openModal, metrics, customGreetingTitle, financialSummaryText, currentMonthPendingTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
+          currentTab, switchTab, hideValues, openModal, isEditing, metrics, customGreetingTitle, financialSummaryText, currentMonthPendingTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
           filteredTransactions, recurringTransactions, filterSearch, filterType, filterSource, selectedProjectionMonth, projectionData, topProjectedExpenses, topProjectedIncome, projectionBySource, projectionCompromiseRate,
-          txForm, recForm, instForm, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate
+          txForm, recForm, instForm, openCreateModal, openEditModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate
         };
       }
     }).mount('#app');
