@@ -108,19 +108,15 @@
         </div>
 
         <div class="px-3 py-2 rounded-xl bg-white/40 border border-white/60 flex items-center justify-between text-[10px] font-medium text-gray-500">
-          <div class="flex items-center gap-2" :title="dbStatus === 'error' ? dbErrorMessage : ''">
+          <div class="flex items-center gap-2">
             <span class="relative flex h-2 w-2">
               <span v-if="dbStatus === 'connected'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span :class="{'bg-emerald-500': dbStatus === 'connected', 'bg-rose-500': dbStatus === 'error', 'bg-amber-500': dbStatus === 'connecting'}" class="relative inline-flex rounded-full h-2 w-2"></span>
             </span>
             <span>{{ dbStatusText }}</span>
           </div>
-          <button v-if="dbStatus === 'error'" @click="fetchData" class="text-[9px] font-bold text-[#2E6F68] hover:underline" title="Tentar reconectar">
-            Tentar novamente
-          </button>
-          <i v-else data-lucide="database" class="w-3.5 h-3.5 text-gray-400"></i>
+          <i data-lucide="database" class="w-3.5 h-3.5 text-gray-400"></i>
         </div>
-        <p v-if="dbStatus === 'error'" class="text-[9px] text-rose-500 leading-snug px-1">{{ dbErrorMessage }}</p>
       </div>
     </aside>
 
@@ -838,8 +834,8 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://gyrrrwykwffjvgqnepio.supabase.co;
-    const SUPABASE_KEY = 'sb_publishable_Zg_buE_f46sWZrE0k5MHAg_jvgmHEw8;
+    const SUPABASE_URL = 'https://gyrrrwykwffjvgqnepio.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_Zg_buE_f46sWZrE0k5MHAg_jvgmHEw8';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
@@ -853,29 +849,6 @@
         const isSubmitting = ref(false);
         const openEditInstallmentModalState = ref(false);
         const dbStatus = ref('connecting');
-        const dbErrorMessage = ref('');
-        const dbErrorIsNetwork = ref(false);
-
-        // Detecta se o erro é uma falha de REDE (fetch nunca chegou a um servidor) —
-        // diferente de um erro retornado pelo Postgrest/Supabase (RLS, coluna inválida etc).
-        // "Failed to fetch" é o TypeError nativo do navegador quando a requisição não
-        // consegue nem completar: projeto Supabase pausado/excluído, sem internet,
-        // bloqueio de CORS, extensão de navegador (ad-blocker) ou firewall/DNS bloqueando o domínio.
-        const isNetworkError = (error) => {
-          const msg = (error && (error.message || error.toString())) || '';
-          return (error instanceof TypeError) || /failed to fetch|network ?error|load failed/i.test(msg);
-        };
-
-        const describeError = (error) => {
-          if (isNetworkError(error)) {
-            return 'Falha de conexão com o Supabase (Failed to fetch). Isso normalmente significa que: '
-              + '1) o projeto Supabase está pausado (planos gratuitos pausam após dias de inatividade), '
-              + '2) não há internet ou o domínio *.supabase.co está bloqueado (firewall/DNS/ad-blocker), ou '
-              + '3) a origem desta página não está liberada no CORS do projeto. '
-              + 'Verifique o status do projeto em supabase.com/dashboard e tente novamente.';
-          }
-          return error?.message || error?.error_description || String(error);
-        };
 
         const transactions = ref([]);
         const categories = ref([]);
@@ -916,7 +889,6 @@
         const fetchData = async () => {
           try {
             dbStatus.value = 'connecting';
-            dbErrorMessage.value = '';
             const { data: catData, error: catErr } = await supabaseClient.from('categories').select('*');
             if (catErr) throw catErr;
             categories.value = catData || [];
@@ -931,15 +903,13 @@
             renderCharts();
           } catch (error) {
             console.error('Erro de conexão com Supabase:', error);
-            dbErrorMessage.value = describeError(error);
-            dbErrorIsNetwork.value = isNetworkError(error);
             dbStatus.value = 'error';
           }
         };
 
         const dbStatusText = computed(() => {
           if (dbStatus.value === 'connected') return 'Conectado ao Supabase';
-          if (dbStatus.value === 'error') return dbErrorIsNetwork.value ? 'Sem conexão com o Supabase' : 'Erro de Conexão';
+          if (dbStatus.value === 'error') return 'Erro de Conexão';
           return 'Conectando ao banco...';
         });
 
@@ -1026,7 +996,7 @@
             await fetchData();
           } catch (error) {
             console.error('Erro ao salvar transação:', error);
-            alert(`Erro ao salvar transação: ${describeError(error)}`);
+            alert(`Erro ao salvar transação: ${error.message || error}`);
           } finally {
             isSubmitting.value = false;
           }
@@ -1056,7 +1026,7 @@
             await fetchData();
           } catch (error) {
             console.error('Erro ao salvar conta fixa:', error);
-            alert(`Erro ao salvar conta fixa: ${describeError(error)}`);
+            alert(`Erro ao salvar conta fixa: ${error.message || error}`);
           } finally {
             isSubmitting.value = false;
           }
@@ -1096,7 +1066,7 @@
             await fetchData();
           } catch (error) {
             console.error('Erro ao gerar parcelas:', error);
-            alert(`Erro ao gerar parcelas: ${describeError(error)}`);
+            alert(`Erro ao gerar parcelas: ${error.message || error}`);
           } finally {
             isSubmitting.value = false;
           }
@@ -1127,7 +1097,7 @@
             await fetchData();
           } catch (error) {
             console.error('Erro ao atualizar parcelas:', error);
-            alert(`Erro ao atualizar parcelamento: ${describeError(error)}`);
+            alert(`Erro ao atualizar parcelamento: ${error.message || error}`);
           } finally {
             isSubmitting.value = false;
           }
@@ -1145,7 +1115,7 @@
           if (error) {
             console.error('Erro de gravação Supabase RLS/Update:', error);
             t.is_paid = !newStatus;
-            alert(`Erro ao salvar alteração: ${describeError(error)}`);
+            alert(`Erro ao salvar alteração: ${error.message || 'Verifique as permissões de RLS no Supabase'}`);
           } else {
             calculateProjection();
             renderCharts();
@@ -1157,7 +1127,7 @@
           if (confirm('Deseja realmente remover esta transação?')) {
             const { error } = await supabaseClient.from('transactions').delete().eq('id', id);
             if (error) {
-              alert(`Erro ao remover transação: ${describeError(error)}`);
+              alert(`Erro ao remover transação: ${error.message}`);
               return;
             }
             fetchData();
@@ -1168,7 +1138,7 @@
           if (confirm('Deseja realmente excluir todas as parcelas desta compra parcelada?')) {
             const { error } = await supabaseClient.from('transactions').delete().eq('installment_group_id', groupId);
             if (error) {
-              alert(`Erro ao excluir parcelamento: ${describeError(error)}`);
+              alert(`Erro ao excluir parcelamento: ${error.message}`);
               return;
             }
             fetchData();
@@ -1612,7 +1582,7 @@
         });
 
         return {
-          currentTab, switchTab, hideValues, openModal, isEditing, isSubmitting, openEditInstallmentModalState, dbStatus, dbStatusText, dbErrorMessage, fetchData, metrics, customGreetingTitle, financialSummaryText, currentMonthAllTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
+          currentTab, switchTab, hideValues, openModal, isEditing, isSubmitting, openEditInstallmentModalState, dbStatus, dbStatusText, metrics, customGreetingTitle, financialSummaryText, currentMonthAllTransactions, currentMonthPendingCount, upcomingDueTransactions, paymentSources, transactions, categories,
           filteredTransactions, recurringTransactions, installmentGroups, deleteInstallmentGroup, filterSearch, filterType, filterSource, selectedProjectionMonth, projectionData, topProjectedExpenses, topProjectedIncome, projectionBySource, projectionCompromiseRate,
           txForm, recForm, instForm, editInstForm, openCreateModal, openEditModal, openEditInstallmentModal, updateInstallmentGroup, closeModal, saveTransaction, saveRecurring, saveInstallment, togglePaidStatus, deleteTransaction, calculateProjection, getSourcePercentage, formatCurrency, formatDate,
           totalActiveDebt, healthScore, monthComparison, paymentSourceComparison, debtStrategy, extraPayment, debtPayoffPlan
